@@ -9,25 +9,25 @@ namespace GraphAlgorithms
     /// </summary>
     public sealed class HungarianAlgorithm
     {
-        private readonly int[,] _costMatrix;
-        private int _inf;
+        private readonly double[,] _costMatrix;
+        private double _inf;
         private int _n; //number of elements
-        private int[] _lx; //labels for workers
-        private int[] _ly; //labels for jobs 
+        private double[] _lx; //labels for workers
+        private double[] _ly; //labels for jobs 
         private bool[] _s;
         private bool[] _t;
-        private int[] _matchX; //vertex matched with x
-        private int[] _matchY; //vertex matched with y
+        private double[] _matchX; //vertex matched with x
+        private double[] _matchY; //vertex matched with y
         private int _maxMatch;
-        private int[] _slack;
-        private int[] _slackx;
-        private int[] _prev; //memorizing paths
+        private double[] _slack;
+        private double[] _slackx;
+        private double[] _prev; //memorizing paths
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="costMatrix"></param>
-        public HungarianAlgorithm(int[,] costMatrix)
+        public HungarianAlgorithm(double[,] costMatrix)
         {
             _costMatrix = costMatrix;
         }
@@ -36,20 +36,20 @@ namespace GraphAlgorithms
         /// 
         /// </summary>
         /// <returns></returns>
-        public int[] Run()
+        public double[] Run()
         {
             _n = _costMatrix.GetLength(0);
 
-            _lx = new int[_n];
-            _ly = new int[_n];
+            _lx = new double[_n];
+            _ly = new double[_n];
             _s = new bool[_n];
             _t = new bool[_n];
-            _matchX = new int[_n];
-            _matchY = new int[_n];
-            _slack = new int[_n];
-            _slackx = new int[_n];
-            _prev = new int[_n];
-            _inf = int.MaxValue;
+            _matchX = new double[_n];
+            _matchY = new double[_n];
+            _slack = new double[_n];
+            _slackx = new double[_n];
+            _prev = new double[_n];
+            _inf = double.MaxValue;
 
 
             InitMatches();
@@ -63,7 +63,7 @@ namespace GraphAlgorithms
 
             InitialMatching();
 
-            var q = new Queue<int>();
+            var q = new Queue<double>();
 
             #region augment
 
@@ -105,16 +105,16 @@ namespace GraphAlgorithms
                 {
                     while (q.Count != 0)
                     {
-                        x = q.Dequeue();
+                        x = (int)q.Dequeue();
                         var lxx = _lx[x];
                         for (y = 0; y < _n; y++)
                         {
                             if (_costMatrix[x, y] != lxx + _ly[y] || _t[y]) continue;
                             if (_matchY[y] == -1) break; //augmenting path found!
                             _t[y] = true;
-                            q.Enqueue(_matchY[y]);
+                            q.Enqueue((int)_matchY[y]);
 
-                            AddToTree(_matchY[y], x);
+                            AddToTree((int)_matchY[y], x);
                         }
                         if (y < _n) break; //augmenting path found!
                     }
@@ -131,13 +131,13 @@ namespace GraphAlgorithms
                         if (_t[y] || _slack[y] != 0) continue;
                         if (_matchY[y] == -1) //found exposed vertex-augmenting path exists
                         {
-                            x = _slackx[y];
+                            x = (int)_slackx[y];
                             break;
                         }
                         _t[y] = true;
-                        if (_s[_matchY[y]]) continue;
+                        if (_s[(int)_matchY[y]]) continue;
                         q.Enqueue(_matchY[y]);
-                        AddToTree(_matchY[y], _slackx[y]);
+                        AddToTree((int)_matchY[y], (int)_slackx[y]);
                     }
                     if (y < _n) break;
                 }
@@ -146,9 +146,9 @@ namespace GraphAlgorithms
 
                 //inverse edges along the augmenting path
                 int ty;
-                for (int cx = x, cy = y; cx != -2; cx = _prev[cx], cy = ty)
+                for (int cx = x, cy = y; cx != -2; cx = (int)_prev[cx], cy = ty)
                 {
-                    ty = _matchX[cx];
+                    ty = (int)_matchX[cx];
                     _matchY[cy] = cx;
                     _matchX[cx] = cy;
                 }
