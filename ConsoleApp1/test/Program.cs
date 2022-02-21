@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GraphAlgorithms;
+using Genetic;
 
 namespace AlgorithmTesting
 {
-    class Node
+    public class Node
     { // Supply or Request objects
         public double x;
         public double y;
@@ -29,7 +30,7 @@ namespace AlgorithmTesting
 
     }
 
-    class Trip
+    public class Trip
     { // Supply or Request objects
         public double x_src;
         public double y_src;
@@ -46,12 +47,20 @@ namespace AlgorithmTesting
 
     }
 
-    class AssignedTriple
+    public class AssignedTriple
     {
         public Node source;
         public Node destination;
         public Trip crowdshipper;
-        public double distance;
+
+        public double distance; // distance between src and dest (used for selfsourcing)
+        public double profit;   // total profit of the system : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
+        public double cost;     // how much we must pay the crowdshipper : ( c_dtr * t_dtr )
+
+        // c_dtr = 30$ per hour
+        // r_ssrc = 10$
+        // r_home = 15$
+
         public AssignedTriple(Node a, Node b, Trip c)
         {
             this.source = a;
@@ -84,8 +93,7 @@ namespace AlgorithmTesting
             var matrix1 = new double[demandslen, supplieslen];
 
             if (demandslen == supplieslen)
-            {
-                Console.WriteLine("equal size");
+            {                
                 
                 for (int i = 0; i < demandslen; i++)
                 {
@@ -170,9 +178,9 @@ namespace AlgorithmTesting
         static int Main()
         {
             var matrix = generateMatrix();
-            var algorithm = new HungarianAlgorithm(matrix);
-            var result = algorithm.Run();
-            printArray(result);
+            var hunAlgorithm = new HungarianAlgorithm(matrix);
+            var result = hunAlgorithm.Run();
+            //printArray(result);
 
             // This list holds tuples of assigned sources and destinations
             // while it would be better if there were 3 nodes in the assignment triple 
@@ -180,11 +188,10 @@ namespace AlgorithmTesting
 
             List<AssignedTriple> tuples = create_ssrc_tuples(result);
 
-            for (int i=0; i<tuples.Count; i++)
-            {
-                Console.WriteLine("src: {0} {1}, dest: {2} {3} ... dist: {4}", tuples[i].source.x, tuples[i].source.y, tuples[i].destination.x, tuples[i].destination.y, tuples[i].distance);
-            }
+            var genAlgorithm = new GeneticAlgorithm(tuples);
 
+            // This should change to -> var result = genAlgorithm.Run();
+            genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;
