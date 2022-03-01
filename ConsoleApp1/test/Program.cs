@@ -5,6 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using GraphAlgorithms;
 using Genetic;
+using System.Xml;
+using OsmSharp.Streams;
+using System.IO;
+using System.Threading.Tasks;
+
+
 
 namespace AlgorithmTesting
 {
@@ -53,8 +59,9 @@ namespace AlgorithmTesting
         public Node destination;
         public Trip crowdshipper;
 
-        public double distance; // distance between src and dest (used for selfsourcing)
-        public double profit;   // total profit of the system : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
+        public double abs_distance; // distance between src and dest (used for selfsourcing)
+        public double home_del_detour; // 
+        public double profit;   // profit of the assignment : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
         public double cost;     // how much we must pay the crowdshipper : ( c_dtr * t_dtr )
 
         // c_dtr = 30$ per hour
@@ -66,11 +73,15 @@ namespace AlgorithmTesting
             this.source = a;
             this.destination = b;
             this.crowdshipper = c;
-            double x = Math.Abs(a.x - b.x);
-            double y = Math.Abs(a.y - b.y);
-            // This is the distance between src and destination 
-            // Where's the crowdshipping dist???
-            this.distance = Math.Sqrt(x * x + y * y);
+        }
+
+        public void calculate_profit()
+        {
+            double x = Math.Abs(source.x - destination.x);
+            double y = Math.Abs(source.y - destination.y);
+            this.abs_distance = Math.Sqrt(x * x + y * y);       
+
+
         }
 
     }
@@ -79,8 +90,48 @@ namespace AlgorithmTesting
     {
 
         static List<Node> supplier_nodes = new List<Node>();
-        static List<Node> demander_nodes = new List<Node>();
-        
+        static List<Node> demander_nodes = new List<Node>();        
+
+        static void generate_data_file()
+        {
+            Random random = new Random();
+            XmlTextReader reader = null;
+            reader = new XmlTextReader(@"D:\Atlanta.osm");
+            reader.WhitespaceHandling = WhitespaceHandling.None;
+            int count = 0;
+            while (reader.Read())
+            {
+                if (reader.Name.Equals("node") && reader.AttributeCount == 4) { count++; }
+            }
+            Console.WriteLine("total count: {0}", count);
+            int data_samples = 2;
+
+            // Supplies 
+            reader = new XmlTextReader(@"D:\Atlanta.osm");
+            reader.WhitespaceHandling = WhitespaceHandling.None;
+            string text = "";
+            for (int i=0; i<data_samples; i++)
+            {
+                int randomNum = random.Next(count);
+                Console.WriteLine("random number: {0}", randomNum);
+                while (randomNum > 0)
+                {
+                    reader.Read();
+                    if (reader.Name.Equals("node") && reader.AttributeCount == 4) 
+                    { 
+                        randomNum--;                        
+                    }
+                    if (randomNum == 0)
+                    {
+                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
+                    }
+                }
+            }
+            File.WriteAllText(@"D:\supplies.txt", text);
+
+            Console.WriteLine("dx");
+            
+        }
         static double[,] generateMatrix()
         {
             string[] supplies = System.IO.File.ReadAllLines(@"D:\final project test cases\245\generator_result\!supplies_and_types.txt");
@@ -177,6 +228,7 @@ namespace AlgorithmTesting
 
         static int Main()
         {
+            generate_data_file();
             var matrix = generateMatrix();
             var hunAlgorithm = new HungarianAlgorithm(matrix);
             var result = hunAlgorithm.Run();
@@ -191,7 +243,7 @@ namespace AlgorithmTesting
             var genAlgorithm = new GeneticAlgorithm(tuples);
 
             // This should change to -> var result = genAlgorithm.Run();
-            genAlgorithm.Run();
+            // genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;

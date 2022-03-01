@@ -6,7 +6,11 @@ namespace Genetic
 {
     public sealed class GeneticAlgorithm
     {
-        private readonly Random random = new Random();
+
+        private readonly Random random = new Random();        
+        private List<double> fitness = new List<double>();
+        private List<double> expected_counts = new List<double>();
+        
         private List<AlgorithmTesting.AssignedTriple> triples = new List<AlgorithmTesting.AssignedTriple>();
         private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
@@ -141,15 +145,15 @@ namespace Genetic
 
         public void Calculate_Fitness()
         {
-
+            // Do this simultaneously with the generation creation
         }
         public void Select_Parents()
         {
-
+            // Create a list that says how many of each of the members should be replicated
         }
         public void Create_Next_Generation()
         {
-
+            // Do the mutation according to the list produced by the previous function
         }
 
 
@@ -162,7 +166,7 @@ namespace Genetic
             create_tripslist(); // done    
 
             Generate_Initial_Population(population_size);
-            // create as many possible assignments as the 
+            // create as many possible assignments as the size given
 
             for(int i=0; i<number_of_iterations; i++)
             {
