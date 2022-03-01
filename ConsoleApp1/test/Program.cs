@@ -86,51 +86,126 @@ namespace AlgorithmTesting
 
     }
 
-    public class Program
+    public sealed class Program
     {
-
+        static readonly Random random = new Random();
         static List<Node> supplier_nodes = new List<Node>();
-        static List<Node> demander_nodes = new List<Node>();        
+        static List<Node> demander_nodes = new List<Node>();
+        static int dataset_size = 0;
+        static int data_samples = 200;
 
-        static void generate_data_file()
+        static void get_data_size()
         {
-            Random random = new Random();
             XmlTextReader reader = null;
-            reader = new XmlTextReader(@"D:\Atlanta.osm");
+            reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
             reader.WhitespaceHandling = WhitespaceHandling.None;
-            int count = 0;
             while (reader.Read())
             {
-                if (reader.Name.Equals("node") && reader.AttributeCount == 4) { count++; }
+                if (reader.Name.Equals("node") && reader.AttributeCount == 4) { dataset_size++; }
             }
-            Console.WriteLine("total count: {0}", count);
-            int data_samples = 2;
+            Console.WriteLine("total count: {0}", dataset_size);
+        }
 
+        static void create_supplies() {
             // Supplies 
-            reader = new XmlTextReader(@"D:\Atlanta.osm");
-            reader.WhitespaceHandling = WhitespaceHandling.None;
             string text = "";
-            for (int i=0; i<data_samples; i++)
+            XmlTextReader reader = null;            
+            for (int i = 0; i < data_samples; i++)
             {
-                int randomNum = random.Next(count);
-                Console.WriteLine("random number: {0}", randomNum);
+                Console.WriteLine("supply {0}", i);
+                reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
+                reader.WhitespaceHandling = WhitespaceHandling.None;
+                int randomNum = random.Next(dataset_size * 2 / 3);
                 while (randomNum > 0)
                 {
                     reader.Read();
-                    if (reader.Name.Equals("node") && reader.AttributeCount == 4) 
-                    { 
-                        randomNum--;                        
-                    }
+                    randomNum--;
                     if (randomNum == 0)
                     {
+                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        {
+                            reader.Read();
+                        }
                         text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
                     }
                 }
             }
-            File.WriteAllText(@"D:\supplies.txt", text);
-
-            Console.WriteLine("dx");
-            
+            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\supplies.txt", text);
+        }
+        static void create_requests()
+        {
+            // Requests 
+            string text = "";
+            XmlTextReader reader = null;
+            for (int i = 0; i < data_samples; i++)
+            {
+                Console.WriteLine("Request {0}", i);
+                reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
+                reader.WhitespaceHandling = WhitespaceHandling.None;
+                int randomNum = random.Next(dataset_size * 2 / 3);
+                while (randomNum > 0)
+                {
+                    reader.Read();
+                    randomNum--;
+                    if (randomNum == 0)
+                    {
+                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        {
+                            reader.Read();
+                        }
+                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
+                    }
+                }
+            }
+            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\requests.txt", text);
+        }
+        static void create_crowdshippers() 
+        { 
+            // Crowdshipper
+            string text = "";
+            XmlTextReader reader = null;
+            for (int i = 0; i < data_samples; i++)
+            {
+                Console.WriteLine("Crowdshipper {0}", i);
+                reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
+                reader.WhitespaceHandling = WhitespaceHandling.None;
+                int randomNum = random.Next(dataset_size * 2 / 3);
+                int randomNum1 = randomNum;
+                while (randomNum > 0)
+                {
+                    reader.Read();
+                    randomNum--;
+                    if (randomNum == 0)
+                    {
+                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        {
+                            reader.Read();
+                        }
+                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + " ";
+                    }
+                }                
+                int randomNum2 = random.Next(dataset_size * 2 / 3);     
+                while (randomNum2 == randomNum1)
+                {
+                    randomNum2 = random.Next(dataset_size * 2 / 3);
+                }
+                reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
+                reader.WhitespaceHandling = WhitespaceHandling.None;
+                while (randomNum2 > 0)
+                {
+                    reader.Read();
+                    randomNum2--;
+                    if (randomNum2 == 0)
+                    {
+                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        {
+                            reader.Read();
+                        }
+                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + "\n";
+                    }
+                }
+            }
+            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt", text);
         }
         static double[,] generateMatrix()
         {
@@ -228,7 +303,8 @@ namespace AlgorithmTesting
 
         static int Main()
         {
-            generate_data_file();
+            get_data_size();
+            create_crowdshippers();
             var matrix = generateMatrix();
             var hunAlgorithm = new HungarianAlgorithm(matrix);
             var result = hunAlgorithm.Run();
