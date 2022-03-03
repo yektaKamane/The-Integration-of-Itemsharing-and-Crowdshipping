@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Newtonsoft.Json;
-
+using System.Text;
+using Osrm.Client.Models;
+using Osrm.Client.v5;
 
 namespace Genetic
 {
@@ -91,15 +93,20 @@ namespace Genetic
             }
         }
 
-        static void calculate_profit(AlgorithmTesting.AssignedTriple t)
+         static void calculate_profit(AlgorithmTesting.AssignedTriple t)
         {
             if (t.crowdshipper != null)
             {
-                string request = "http://router.project-osrm.org/route/v1/driving/";
-                request += t.crowdshipper.y_src.ToString() + "," + t.crowdshipper.x_src.ToString() + ";";
-                request += t.source.y.ToString() + "," + t.source.x.ToString();
-                //Console.WriteLine(request);
-            }
+                var osrm5x = new Osrm5x("http://router.project-osrm.org/");
+                
+                var locations = new Osrm.Client.Location[] {
+                    new Osrm.Client.Location(t.crowdshipper.x_src, t.crowdshipper.y_src),
+                    new Osrm.Client.Location(t.source.x, t.source.y),
+                };
+
+                var result = osrm5x.Route(locations);
+                Console.WriteLine(result.Routes[0].Duration /60);
+            }                                   
         }
 
         public bool check_trip_feasibility(AlgorithmTesting.Trip trip, int n)
@@ -136,7 +143,7 @@ namespace Genetic
                     // remove the crowdshipper from the copylist
                     if ( check_trip_feasibility(selectedTrip, j) )
                     {
-                        //var source = triples[j].source;
+                        // bring the next 3 lines out of the if condition
                         var source = new AlgorithmTesting.Node(triples[j].source.x, triples[j].source.y);
                         var destination = new AlgorithmTesting.Node(triples[j].destination.x, triples[j].destination.y);
                         var assignmentTemp = new AlgorithmTesting.AssignedTriple(source, destination, selectedTrip);
@@ -176,25 +183,9 @@ namespace Genetic
         }
 
 
-        async static void temp()
-        {
-            using (var httpClient = new HttpClient())
-            {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), "http://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false"))
-                {
-                    var response = await httpClient.SendAsync(request);
-                    var txtBlock = await response.Content.ReadAsStringAsync();
-                    //dynamic json = JsonConvert.DeserializeObject();
-                    Console.WriteLine(txtBlock);
-                }
-            }
-        }
-
 
         public void Run()
-        {
-
-            temp();
+        {            
 
             int population_size = 10;
             int number_of_iterations = 1000;
