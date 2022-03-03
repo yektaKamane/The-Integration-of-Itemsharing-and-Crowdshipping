@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.IO;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using Newtonsoft.Json;
+
 
 namespace Genetic
 {
     public sealed class GeneticAlgorithm
     {
-
+        static HttpClient client = new HttpClient();
         private readonly Random random = new Random();        
         private List<double> fitness = new List<double>();
         private List<double> expected_counts = new List<double>();
@@ -65,7 +72,7 @@ namespace Genetic
 
         public void create_tripslist()
         {
-            string[] crowdshippers = System.IO.File.ReadAllLines(@"D:\final project test cases\245\generator_result\read_only_crowdshipper.txt");
+            string[] crowdshippers = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt");
             int crowdshipperslen = crowdshippers.Length;
 
             for (int i=0; i< crowdshipperslen; i++)
@@ -81,6 +88,17 @@ namespace Genetic
 
                 var trip = new AlgorithmTesting.Trip(src_x, src_y, dest_x, dest_y);
                 trips.Add(trip);
+            }
+        }
+
+        static void calculate_profit(AlgorithmTesting.AssignedTriple t)
+        {
+            if (t.crowdshipper != null)
+            {
+                string request = "http://router.project-osrm.org/route/v1/driving/";
+                request += t.crowdshipper.y_src.ToString() + "," + t.crowdshipper.x_src.ToString() + ";";
+                request += t.source.y.ToString() + "," + t.source.x.ToString();
+                //Console.WriteLine(request);
             }
         }
 
@@ -121,7 +139,8 @@ namespace Genetic
                         //var source = triples[j].source;
                         var source = new AlgorithmTesting.Node(triples[j].source.x, triples[j].source.y);
                         var destination = new AlgorithmTesting.Node(triples[j].destination.x, triples[j].destination.y);
-                        var assignmentTemp = new AlgorithmTesting.AssignedTriple(source, destination, selectedTrip);                        
+                        var assignmentTemp = new AlgorithmTesting.AssignedTriple(source, destination, selectedTrip);
+                        calculate_profit(assignmentTemp);
 
                         feasibleSolution.Add(assignmentTemp);
                         tripsCloned.RemoveAt(randomNum);
@@ -139,7 +158,7 @@ namespace Genetic
                 //print_list(feasibleSolution, 10);
                 //print_list_list(initial_population, 5);
             }
-            print_list_list(initial_population, 5);
+            //print_list_list(initial_population, 5);
 
         }
 
@@ -157,9 +176,26 @@ namespace Genetic
         }
 
 
+        async static void temp()
+        {
+            using (var httpClient = new HttpClient())
+            {
+                using (var request = new HttpRequestMessage(new HttpMethod("GET"), "http://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false"))
+                {
+                    var response = await httpClient.SendAsync(request);
+                    var txtBlock = await response.Content.ReadAsStringAsync();
+                    //dynamic json = JsonConvert.DeserializeObject();
+                    Console.WriteLine(txtBlock);
+                }
+            }
+        }
+
+
         public void Run()
         {
-            
+
+            temp();
+
             int population_size = 10;
             int number_of_iterations = 1000;
 
@@ -187,3 +223,14 @@ namespace Genetic
 
     }
 }
+
+
+
+//{ 
+//    "code":"Ok",
+//    "waypoints":[
+//        { "hint":"sNEFiT3o4YAYAAAABQAAAAAAAAAgAAAASjFaQdLNK0AAAAAAsPePQQwAAAADAAAAAAAAABAAAAAa6QAA_kvMAKlYIQM8TMwArVghAwAA7wo65UwK",
+//            "distance":4.231666,"location":[13.388798,52.517033],"name":"Friedrichstraße"},
+//        { "hint":"7RDigOQFCIkGAAAACgAAAAAAAAB2AAAAW7-PQOKcyEAAAAAApq6DQgYAAAAKAAAAAAAAAHYAAAAa6QAAf27MABiJIQOCbswA_4ghAwAAXwU65UwK","distance":2.789393,"location":[13.397631,52.529432],"name":"Torstraße"}
+//    ],
+//        "routes":[{"weight_name":"routability","geometry":"mfp_I__vpAqJ`@wUrCa\\dCgGig@{DwW","weight":254.8,"distance":1884.7,"duration":253.6}]}

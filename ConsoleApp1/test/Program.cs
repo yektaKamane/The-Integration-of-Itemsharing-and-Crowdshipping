@@ -9,7 +9,8 @@ using System.Xml;
 using OsmSharp.Streams;
 using System.IO;
 using System.Threading.Tasks;
-
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 
 namespace AlgorithmTesting
@@ -57,12 +58,13 @@ namespace AlgorithmTesting
     {
         public Node source;
         public Node destination;
-        public Trip crowdshipper;
+        public Trip crowdshipper;        
 
         public double abs_distance; // distance between src and dest (used for selfsourcing)
-        public double home_del_detour; // 
+        public double home_del_detour; // 2(x+y) --> 2(supply to crowdshippers src + crowdshippers dest to req)
         public double profit;   // profit of the assignment : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
         public double cost;     // how much we must pay the crowdshipper : ( c_dtr * t_dtr )
+        public int type_of_delivery;  // 0 : self source, 1 : home delivery, 2 : neighborhood delivery 
 
         // c_dtr = 30$ per hour
         // r_ssrc = 10$
@@ -75,14 +77,6 @@ namespace AlgorithmTesting
             this.crowdshipper = c;
         }
 
-        public void calculate_profit()
-        {
-            double x = Math.Abs(source.x - destination.x);
-            double y = Math.Abs(source.y - destination.y);
-            this.abs_distance = Math.Sqrt(x * x + y * y);       
-
-
-        }
 
     }
 
@@ -209,8 +203,8 @@ namespace AlgorithmTesting
         }
         static double[,] generateMatrix()
         {
-            string[] supplies = System.IO.File.ReadAllLines(@"D:\final project test cases\245\generator_result\!supplies_and_types.txt");
-            string[] demands = System.IO.File.ReadAllLines(@"D:\final project test cases\245\generator_result\!demands_and_types.txt");
+            string[] supplies = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\supplies.txt");
+            string[] demands = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\requests.txt");
 
             //Console.WriteLine(lines[0]);
             int demandslen = demands.Length;
@@ -303,8 +297,6 @@ namespace AlgorithmTesting
 
         static int Main()
         {
-            get_data_size();
-            create_crowdshippers();
             var matrix = generateMatrix();
             var hunAlgorithm = new HungarianAlgorithm(matrix);
             var result = hunAlgorithm.Run();
@@ -319,7 +311,7 @@ namespace AlgorithmTesting
             var genAlgorithm = new GeneticAlgorithm(tuples);
 
             // This should change to -> var result = genAlgorithm.Run();
-            // genAlgorithm.Run();
+            genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;
