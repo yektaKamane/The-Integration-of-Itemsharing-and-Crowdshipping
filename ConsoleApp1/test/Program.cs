@@ -95,7 +95,7 @@ namespace AlgorithmTesting
             reader.WhitespaceHandling = WhitespaceHandling.None;
             while (reader.Read())
             {
-                if (reader.Name.Equals("node") && reader.AttributeCount == 4) { dataset_size++; }
+                if (reader.Name.Equals("node") && reader.AttributeCount >= 2) { dataset_size++; }
             }
             Console.WriteLine("total count: {0}", dataset_size);
         }
@@ -109,18 +109,18 @@ namespace AlgorithmTesting
                 Console.WriteLine("supply {0}", i);
                 reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
                 reader.WhitespaceHandling = WhitespaceHandling.None;
-                int randomNum = random.Next(dataset_size * 2 / 3);
+                int randomNum = random.Next(dataset_size);
                 while (randomNum > 0)
                 {
                     reader.Read();
                     randomNum--;
                     if (randomNum == 0)
                     {
-                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        while (reader.Name != "node" || reader.AttributeCount < 2)
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
+                        text += reader.GetAttribute(7) + " " + reader.GetAttribute(8) + "\n";
                     }
                 }
             }
@@ -136,18 +136,18 @@ namespace AlgorithmTesting
                 Console.WriteLine("Request {0}", i);
                 reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
                 reader.WhitespaceHandling = WhitespaceHandling.None;
-                int randomNum = random.Next(dataset_size * 2 / 3);
+                int randomNum = random.Next(dataset_size);
                 while (randomNum > 0)
                 {
                     reader.Read();
                     randomNum--;
                     if (randomNum == 0)
                     {
-                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        while (reader.Name != "node" || reader.AttributeCount < 2)
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
+                        text += reader.GetAttribute(7) + " " + reader.GetAttribute(8) + "\n";
                     }
                 }
             }
@@ -163,7 +163,7 @@ namespace AlgorithmTesting
                 Console.WriteLine("Crowdshipper {0}", i);
                 reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
                 reader.WhitespaceHandling = WhitespaceHandling.None;
-                int randomNum = random.Next(dataset_size * 2 / 3);
+                int randomNum = random.Next(dataset_size);
                 int randomNum1 = randomNum;
                 while (randomNum > 0)
                 {
@@ -171,17 +171,17 @@ namespace AlgorithmTesting
                     randomNum--;
                     if (randomNum == 0)
                     {
-                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        while (reader.Name != "node" || reader.AttributeCount < 2)
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + " ";
+                        text += reader.GetAttribute(7) + "," + reader.GetAttribute(8) + " ";
                     }
                 }                
-                int randomNum2 = random.Next(dataset_size * 2 / 3);     
+                int randomNum2 = random.Next(dataset_size);     
                 while (randomNum2 == randomNum1)
                 {
-                    randomNum2 = random.Next(dataset_size * 2 / 3);
+                    randomNum2 = random.Next(dataset_size);
                 }
                 reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
                 reader.WhitespaceHandling = WhitespaceHandling.None;
@@ -191,11 +191,11 @@ namespace AlgorithmTesting
                     randomNum2--;
                     if (randomNum2 == 0)
                     {
-                        while (reader.Name != "node" || reader.AttributeCount != 4)
+                        while (reader.Name != "node" || reader.AttributeCount < 2)
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + "\n";
+                        text += reader.GetAttribute(7) + "," + reader.GetAttribute(8) + "\n";
                     }
                 }
             }
@@ -297,6 +297,12 @@ namespace AlgorithmTesting
 
         static int Main()
         {
+            //get_data_size();
+            //create_supplies();
+            //create_requests();
+            //create_crowdshippers();
+
+           
             var matrix = generateMatrix();
             var hunAlgorithm = new HungarianAlgorithm(matrix);
             var result = hunAlgorithm.Run();

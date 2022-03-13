@@ -16,13 +16,14 @@ namespace Genetic
     public sealed class GeneticAlgorithm
     {
         static HttpClient client = new HttpClient();
-        private readonly Random random = new Random();        
-        private List<double> fitness = new List<double>();
-        private List<double> expected_counts = new List<double>();
-        
+        private readonly Random random = new Random();
+
+        private List<double> fitness_values = new List<double>();                
         private List<AlgorithmTesting.AssignedTriple> triples = new List<AlgorithmTesting.AssignedTriple>();
         private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
+
+        
 
         public GeneticAlgorithm(List<AlgorithmTesting.AssignedTriple> a)
         {
@@ -42,9 +43,10 @@ namespace Genetic
 
             for(int i=0; i<n; i++)
             {
-                Console.WriteLine("source: ({0}, {1}), dest: ({2}, {3}), trip: ({4}, {5}) -> ({6}, {7})",
+                Console.WriteLine("source: ({0}, {1}), dest: ({2}, {3}), trip: ({4}, {5}) -> ({6}, {7}) - profit : {8}",
                     list[i].source.x, list[i].source.y, list[i].destination.x, list[i].destination.y,
-                    list[i].crowdshipper.x_src, list[i].crowdshipper.y_src, list[i].crowdshipper.x_dest, list[i].crowdshipper.y_dest);
+                    list[i].crowdshipper.x_src, list[i].crowdshipper.y_src, list[i].crowdshipper.x_dest, list[i].crowdshipper.y_dest,
+                    list[i].profit);
             }
             Console.WriteLine("\n----\n\n");
         }
@@ -93,8 +95,45 @@ namespace Genetic
             }
         }
 
-         static void calculate_profit(AlgorithmTesting.AssignedTriple t)
+        static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
         {
+            var d1 = latitude * (Math.PI / 180.0);
+            var num1 = longitude * (Math.PI / 180.0);
+            var d2 = otherLatitude * (Math.PI / 180.0);
+            var num2 = otherLongitude * (Math.PI / 180.0) - num1;
+            var d3 = Math.Pow(Math.Sin((d2 - d1) / 2.0), 2.0) + Math.Cos(d1) * Math.Cos(d2) * Math.Pow(Math.Sin(num2 / 2.0), 2.0);
+
+            return 6376500.0 * (2.0 * Math.Atan2(Math.Sqrt(d3), Math.Sqrt(1.0 - d3)));
+        }
+        static void calculate_profit(AlgorithmTesting.AssignedTriple t)
+        {
+            double total_distance = 0.0;
+            double total_travel_time = 0.0;
+            double profit = 0.0;
+            double dist1 = 0.0;
+            double dist2 = 0.0;
+            double avg_speed = 30.0; // km per hour
+
+            if (t.crowdshipper != null)
+            {               
+                // the crowdshipper has to visit the source in both
+                // home and neighborhood delivery
+                dist1 = GetDistance(t.crowdshipper.y_src, t.crowdshipper.x_src, t.source.y, t.source.x);                
+
+                // if it's a home delivery then there's a dist2
+                dist2 = GetDistance(t.crowdshipper.y_dest, t.crowdshipper.x_dest, t.destination.y, t.destination.x);
+            }
+            total_distance = (2 * dist1) + (2 * dist2);            
+            total_travel_time = (total_distance/1000) / avg_speed;            
+            profit = 15 - (1 * total_travel_time);
+            t.profit = profit;
+            //Console.WriteLine("total dist: {0}", total_distance);
+            //Console.WriteLine("total time: {0}", total_travel_time);
+            //Console.WriteLine("total profit: {0}", profit);
+        }
+
+        static void get_traveltime_api(AlgorithmTesting.AssignedTriple t)
+        { // Using router.project calculates the travel time between some nodes
             if (t.crowdshipper != null)
             {
                 var osrm5x = new Osrm5x("http://router.project-osrm.org/");
@@ -105,14 +144,31 @@ namespace Genetic
                 };
 
                 var result = osrm5x.Route(locations);
-                Console.WriteLine(result.Routes[0].Duration /60);
+                Console.WriteLine(result.Routes[0].Duration);
             }                                   
         }
 
         public bool check_trip_feasibility(AlgorithmTesting.Trip trip, int n)
-        {
+        {            
+            //Console.WriteLine("trip : {0}, {1} -> {2}, {3}", trip.y_src, trip.x_src, trip.y_dest, trip.x_dest);
             // n is index of assignment in the triples list            
-            return true;
+            // if type is home delivery:
+            double direct_trip_duration = GetDistance(trip.y_src, trip.x_src, trip.y_dest, trip.x_dest) / 30.0;
+            //double detour_duration = GetDistance(trip.y_src, trip.x_src, triples[n].source.y, triples[n].source.x) / 30.0;
+            double detour_duration = GetDistance(trip.y_src, trip.x_src, triples[n].source.y, triples[n].source.x)
+                                   + GetDistance(triples[n].source.y, triples[n].source.x, triples[n].destination.y, triples[n].destination.x)
+                                   + GetDistance(triples[n].destination.y, triples[n].destination.x, trip.y_dest, trip.x_dest)
+                                   - direct_trip_duration;
+            detour_duration /= 30.0;
+            // f_dtr_k = 0.2 * tk
+            //Console.WriteLine("direct_trip_duration: {0}\ndetour_duration: {1}\nf_dtr_k: {2}", direct_trip_duration, detour_duration, 0.2 * direct_trip_duration);
+            if (0.2 * direct_trip_duration > detour_duration)
+            {
+                Console.WriteLine(n);
+                Console.WriteLine("direct_trip_duration: {0}\ndetour_duration: {1}\nf_dtr_k: {2}", direct_trip_duration, detour_duration, 0.2 * direct_trip_duration);
+                return true;
+            }
+            return false;
         }
 
         public void Generate_Initial_Population(int population_size)
@@ -162,8 +218,8 @@ namespace Genetic
 
                 // Add the i-th list to the population list
                 initial_population.Add(feasibleSolution);
-                //print_list(feasibleSolution, 10);
-                //print_list_list(initial_population, 5);
+                // print_list(feasibleSolution, 10);
+                // print_list_list(initial_population, 5);
             }
             //print_list_list(initial_population, 5);
 
@@ -172,10 +228,36 @@ namespace Genetic
         public void Calculate_Fitness()
         {
             // Do this simultaneously with the generation creation
+            // The above comment is old I dont know why I wrote that but I think I was refering
+            // to the profit of each assignment. Then yeah I am calculating it inside the generation creation function
+            fitness_values.Clear();            
+            for (int i=0; i<initial_population.Count(); i++)
+            {
+                double sum = 0.0;
+                for(int j=0; j < initial_population[i].Count(); j++)
+                {
+                    sum += initial_population[i][j].profit;
+                }
+                fitness_values.Add(sum);
+                // Console.WriteLine(sum);
+            }
         }
         public void Select_Parents()
         {
             // Create a list that says how many of each of the members should be replicated
+            List<double> expected_counts = new List<double>();
+            List<double> actual_counts = new List<double>();
+
+            double sum_fitness = fitness_values.Sum();
+            double avg_fitness = sum_fitness / fitness_values.Count();
+
+            for(int i=0; i< fitness_values.Count(); i++)
+            {
+                double val = fitness_values[i] / avg_fitness;
+                expected_counts.Add(val);                
+                actual_counts.Add(Math.Round(val, MidpointRounding.AwayFromZero));
+                //Console.WriteLine("{0}, {1}, {2}", fitness_values[i], expected_counts[i], actual_counts[i]);
+            }
         }
         public void Create_Next_Generation()
         {
@@ -187,8 +269,8 @@ namespace Genetic
         public void Run()
         {            
 
-            int population_size = 10;
-            int number_of_iterations = 1000;
+            int population_size = 100;
+            int number_of_iterations = 1;
 
             create_tripslist(); // done    
 
