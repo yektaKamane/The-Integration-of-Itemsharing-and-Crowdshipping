@@ -18,23 +18,12 @@ namespace AlgorithmTesting
     public class Node
     { // Supply or Request objects
         public double x;
-        public double y;
-        // public int type;
-        public double distance(Node a)
-        {
-            double result;
-            double y_dis = Math.Abs(a.y - this.y);
-            double x_dis = Math.Abs(a.x - this.x);
-            result = Math.Sqrt(y_dis * y_dis + x_dis * x_dis);
-            return result;
-
-        }
+        public double y;        
         public Node(double a, double b)
         {
             this.x = a;
             this.y = b;
         }
-
     }
 
     public class Trip
@@ -43,7 +32,6 @@ namespace AlgorithmTesting
         public double y_src;
         public double x_dest;
         public double y_dest;
-
         public Trip(double a, double b, double c, double d)
         {
             this.x_src = a;
@@ -51,45 +39,43 @@ namespace AlgorithmTesting
             this.x_dest = c;
             this.y_dest = d;
         }
-
     }
 
     public class AssignedTriple
     {
         public Node source;
         public Node destination;
-        public Trip crowdshipper;        
+        public Trip crowdshipper;
 
+        public int type_of_delivery;  // 0 : self source, 1 : home delivery, 2 : neighborhood delivery, null : infeasible
         public double abs_distance; // distance between src and dest (used for selfsourcing)
-        public double home_del_detour; // 2(x+y) --> 2(supply to crowdshippers src + crowdshippers dest to req)
+        public double crowdshipper_detour; // in case of home_del: _ , neighborhood: _
         public double profit;   // profit of the assignment : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
         public double cost;     // how much we must pay the crowdshipper : ( c_dtr * t_dtr )
-        public int type_of_delivery;  // 0 : self source, 1 : home delivery, 2 : neighborhood delivery 
-
+        
         // c_dtr = 30$ per hour
         // r_ssrc = 10$
         // r_home = 15$
-
         public AssignedTriple(Node a, Node b, Trip c)
         {
             this.source = a;
             this.destination = b;
             this.crowdshipper = c;
         }
-
-
     }
 
     public sealed class Program
     {
         static readonly Random random = new Random();
-        static List<Node> supplier_nodes = new List<Node>();
-        static List<Node> demander_nodes = new List<Node>();
-        static int dataset_size = 0;
+        public static List<Node> supplier_nodes = new List<Node>();
+        public static List<Node> demander_nodes = new List<Node>();
+        public static List<Trip> crowdshipper_nodes = new List<Trip>();
+        
+        // Change this out of hardcode
         static int data_samples = 200;
-
-        static void get_data_size()
+        static int get_data_size()
         {
+            int dataset_size = 0;
             XmlTextReader reader = null;
             reader = new XmlTextReader(@"D:\Project_Data\Atlanta_City_Map\Atlanta.osm");
             reader.WhitespaceHandling = WhitespaceHandling.None;
@@ -98,9 +84,11 @@ namespace AlgorithmTesting
                 if (reader.Name.Equals("node") && reader.AttributeCount >= 2) { dataset_size++; }
             }
             Console.WriteLine("total count: {0}", dataset_size);
+            return dataset_size;
         }
 
-        static void create_supplies() {
+        static void create_supplies(int dataset_size) 
+        {
             // Supplies 
             string text = "";
             XmlTextReader reader = null;            
@@ -126,7 +114,7 @@ namespace AlgorithmTesting
             }
             File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\supplies.txt", text);
         }
-        static void create_requests()
+        static void create_requests(int dataset_size)
         {
             // Requests 
             string text = "";
@@ -153,7 +141,7 @@ namespace AlgorithmTesting
             }
             File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\requests.txt", text);
         }
-        static void create_crowdshippers() 
+        static void create_crowdshippers(int dataset_size) 
         { 
             // Crowdshipper
             string text = "";
@@ -201,51 +189,99 @@ namespace AlgorithmTesting
             }
             File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt", text);
         }
-        static double[,] generateMatrix()
+
+        static void create_supp_nodes()
         {
             string[] supplies = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\supplies.txt");
-            string[] demands = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\requests.txt");
-
-            //Console.WriteLine(lines[0]);
-            int demandslen = demands.Length;
             int supplieslen = supplies.Length;
+            for (int i = 0; i < supplieslen; i++)
+            {
+                string[] supp_digits = supplies[i].Split(' ');
+                double supp_x = Convert.ToDouble(supp_digits[0]);
+                double supp_y = Convert.ToDouble(supp_digits[1]);
 
-            var matrix1 = new double[demandslen, supplieslen];
+                var node = new Node(supp_x, supp_y);                
+                supplier_nodes.Add(node);
+            }
+        }
+        static void create_req_nodes()
+        {
+            string[] demands = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\requests.txt");
+            int demandslen = demands.Length;
+            for (int i = 0; i < demandslen; i++)
+            {
+                string[] demand_digits = demands[i].Split(' ');
+                double demand_x = Convert.ToDouble(demand_digits[0]);
+                double demand_y = Convert.ToDouble(demand_digits[1]);
 
-            if (demandslen == supplieslen)
-            {                
-                
-                for (int i = 0; i < demandslen; i++)
+                var node = new Node(demand_x, demand_y);          
+                demander_nodes.Add(node);
+            }
+        }
+        static void create_trips()
+        {
+            string[] crowdshippers = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt");
+            int crowdshipperslen = crowdshippers.Length;
+
+            for (int i = 0; i < crowdshipperslen; i++)
+            {
+                string[] coords = crowdshippers[i].Split(' ');
+                string[] src = coords[0].Split(',');
+                double src_x = Convert.ToDouble(src[0]);
+                double src_y = Convert.ToDouble(src[1]);
+
+                string[] dest = coords[1].Split(',');
+                double dest_x = Convert.ToDouble(dest[0]);
+                double dest_y = Convert.ToDouble(dest[1]);
+
+                var trip = new Trip(src_x, src_y, dest_x, dest_y);                
+                crowdshipper_nodes.Add(trip);
+            }
+        }
+
+        static double[,] generateMatrix_sup_req()
+        {
+            int supplieslen = supplier_nodes.Count;
+            int demandslen = demander_nodes.Count;            
+            var matrix = new double[supplieslen, demandslen];
+            for (int i=0; i<supplieslen; i++)
+            {
+                for (int j=0; j<demandslen; j++)
                 {
-                    string[] supp_digits = supplies[i].Split(' ');           
-                    double supp_x = Convert.ToDouble(supp_digits[0]);
-                    double supp_y = Convert.ToDouble(supp_digits[1]);
+                    matrix[i, j] = Genetic.GeneticAlgorithm.GetDistance(supplier_nodes[i].y, supplier_nodes[i].x, demander_nodes[j].y, demander_nodes[j].x);
+                }
+            }            
+            return matrix;
+        }
 
-                    var node = new Node(supp_x, supp_y);
-                    supplier_nodes.Add(node);
-
-                    for (int j=0; j < supplieslen; j++)
-                    {
-                        string[] dem_digits = demands[j].Split(' ');
-                        double demand_x = Convert.ToDouble(dem_digits[0]);
-                        double demand_y = Convert.ToDouble(dem_digits[1]);
-
-                        if (i == 0)
-                        {
-                            var node1 = new Node(demand_x, demand_y);
-                            demander_nodes.Add(node1);
-                        }
-
-                        double x = Math.Abs(supp_x - demand_x);
-                        double y = Math.Abs(supp_y - demand_y);
-
-                        matrix1[i, j] = Math.Sqrt(x * x + y * y);
-                    }
-
+        static double[,] generateMatrix_sup_crowd()
+        {
+            int supplieslen = supplier_nodes.Count;
+            int crowdslen = crowdshipper_nodes.Count;
+            var matrix = new double[supplieslen, crowdslen];
+            for (int i = 0; i < supplieslen; i++)
+            {
+                for (int j = 0; j < crowdslen; j++)
+                {
+                    matrix[i, j] = Genetic.GeneticAlgorithm.GetDistance(supplier_nodes[i].y, supplier_nodes[i].x, crowdshipper_nodes[j].y_src, crowdshipper_nodes[j].x_src);
                 }
             }
+            return matrix;
+        }
 
-            return matrix1;
+        static double[,] generateMatrix_req_crowd()
+        {
+            int demandslen = demander_nodes.Count;
+            int crowdslen = crowdshipper_nodes.Count;
+            var matrix = new double[demandslen, crowdslen];
+            for (int i = 0; i < demandslen; i++)
+            {
+                for (int j = 0; j < crowdslen; j++)
+                {
+                    matrix[i, j] = Genetic.GeneticAlgorithm.GetDistance(demander_nodes[i].y, demander_nodes[i].x, crowdshipper_nodes[j].y_src, crowdshipper_nodes[j].x_src);
+                }
+            }
+            return matrix;
         }
 
         static void printMatrix(double[,] matrix)
@@ -276,10 +312,66 @@ namespace AlgorithmTesting
             {
                 Node source = supplier_nodes[i];
                 Node destination = demander_nodes[(int)array[i]];
+                double distance = Genetic.GeneticAlgorithm.GetDistance(source.y, source.x, destination.y, destination.x);
                 var assignedTuple = new AssignedTriple(source, destination, null);
+                //Console.WriteLine("source {0} : {1} {2}\nassigned to request{3}: {4}, {5}", i, source.x, source.y, array[i], destination.x, destination.y);
+                //Console.WriteLine("distance: {0}, time: {1}, profit: {2}", distance, distance/30.0, 10);
+                if (distance / 30.0 < 10)
+                { // if detour time is less than f_dtr
+                    assignedTuple.abs_distance = distance;
+                    assignedTuple.type_of_delivery = 0;
+                    assignedTuple.profit = 10;
+                }
+                
                 result.Add(assignedTuple);
             }
             return result;
+        }
+
+        static List<AssignedTriple> create_sup_crowd_tuples(double[] array)
+        {
+            // Type of delivery is unset in here
+            List<AssignedTriple> result = new List<AssignedTriple>();
+            for (int i = 0; i < array.Length; i++)
+            {
+                Node supply = supplier_nodes[i];
+                Trip crowdshipper = crowdshipper_nodes[(int)array[i]];
+                double distance = Genetic.GeneticAlgorithm.GetDistance(supply.y, supply.x, crowdshipper.y_src, crowdshipper.x_src);
+                var assignedTuple = new AssignedTriple(supply, null, crowdshipper);
+                //Console.WriteLine("source {0} : {1} {2}\nassigned to request{3}: {4}, {5}", i, source.x, source.y, array[i], destination.x, destination.y);
+                //Console.WriteLine("distance: {0}, time: {1}, profit: {2}", distance, distance/30.0, 10);
+                result.Add(assignedTuple);
+            }
+            return result;
+        }
+        static List<AssignedTriple> create_req_crowd_tuples(double[] array)
+        {
+            // Type of delivery is unset in here
+            List<AssignedTriple> result = new List<AssignedTriple>();
+            for (int i = 0; i < array.Length; i++)
+            {
+                Node req = demander_nodes[i];
+                Trip crowdshipper = crowdshipper_nodes[(int)array[i]];
+                double distance = Genetic.GeneticAlgorithm.GetDistance(req.y, req.x, crowdshipper.y_dest, crowdshipper.x_dest);
+                var assignedTuple = new AssignedTriple(null, req, crowdshipper);
+                //Console.WriteLine("source {0} : {1} {2}\nassigned to request{3}: {4}, {5}", i, source.x, source.y, array[i], destination.x, destination.y);
+                //Console.WriteLine("distance: {0}, time: {1}, profit: {2}", distance, distance/30.0, 10);
+                result.Add(assignedTuple);
+            }
+            return result;
+        }
+
+        static void print_ssrc_result(List<AssignedTriple> list)
+        {
+            double profit = 0.0;
+            for (int i=0; i< list.Count; i++)
+            {
+                if (list[i].type_of_delivery == 0)
+                {
+                    profit += list[i].profit;
+                }
+            }
+            Console.WriteLine("total ssrc profit: {0}", profit);
         }
 
 
@@ -297,27 +389,47 @@ namespace AlgorithmTesting
 
         static int Main()
         {
-            //get_data_size();
-            //create_supplies();
-            //create_requests();
-            //create_crowdshippers();
+            //var size = get_data_size();
+            //create_supplies(size);
+            //create_requests(size);
+            //create_crowdshippers(size);            
 
-           
-            var matrix = generateMatrix();
-            var hunAlgorithm = new HungarianAlgorithm(matrix);
-            var result = hunAlgorithm.Run();
-            //printArray(result);
+            // Reading data from the file
+            // and store in lists
+            create_supp_nodes();
+            create_req_nodes();
+            create_trips();
+
+
+            // Running the Hungarian on Supply and Requests
+            var matrix_sup_req = generateMatrix_sup_req();            
+            var hunAlgorithm_sup_req = new HungarianAlgorithm(matrix_sup_req);
+            var result_sup_req = hunAlgorithm_sup_req.Run();
+            List<AssignedTriple> tuples_sup_req = create_ssrc_tuples(result_sup_req);
+            print_ssrc_result(tuples_sup_req);
+
+
+            // Running the Hungarian on Supply and Crowdshipper
+            var matrix_sup_crowd = generateMatrix_sup_crowd();
+            var hunAlgorithm_sup_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+            var result_sup_crowd = hunAlgorithm_sup_crowd.Run();
+            List<AssignedTriple> tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
+
+            // Running the Hungarian on Requests and Crowdshipper
+            var matrix_req_crowd = generateMatrix_req_crowd();
+            var hunAlgorithm_req_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+            var result_req_crowd = hunAlgorithm_req_crowd.Run();
+            List<AssignedTriple> tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
+
 
             // This list holds tuples of assigned sources and destinations
             // while it would be better if there were 3 nodes in the assignment triple 
             // and one of them would be the crowdshipper --> diff kind of node
 
-            List<AssignedTriple> tuples = create_ssrc_tuples(result);
-
-            var genAlgorithm = new GeneticAlgorithm(tuples);
+            //var genAlgorithm = new GeneticAlgorithm(tuples);
 
             // This should change to -> var result = genAlgorithm.Run();
-            genAlgorithm.Run();
+            // genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;

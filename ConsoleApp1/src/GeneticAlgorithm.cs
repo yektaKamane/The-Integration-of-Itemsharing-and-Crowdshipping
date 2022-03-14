@@ -22,9 +22,7 @@ namespace Genetic
         private List<AlgorithmTesting.AssignedTriple> triples = new List<AlgorithmTesting.AssignedTriple>();
         private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
-
-        
-
+       
         public GeneticAlgorithm(List<AlgorithmTesting.AssignedTriple> a)
         {
             triples = a;
@@ -74,28 +72,8 @@ namespace Genetic
 
         }
 
-        public void create_tripslist()
-        {
-            string[] crowdshippers = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt");
-            int crowdshipperslen = crowdshippers.Length;
 
-            for (int i=0; i< crowdshipperslen; i++)
-            {
-                string[] coords = crowdshippers[i].Split(' ');
-                string[] src = coords[0].Split(',');
-                double src_x = Convert.ToDouble(src[0]);
-                double src_y = Convert.ToDouble(src[1]);
-
-                string[] dest = coords[1].Split(',');
-                double dest_x = Convert.ToDouble(dest[0]);
-                double dest_y = Convert.ToDouble(dest[1]);
-
-                var trip = new AlgorithmTesting.Trip(src_x, src_y, dest_x, dest_y);
-                trips.Add(trip);
-            }
-        }
-
-        static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
+        public static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
         {
             var d1 = latitude * (Math.PI / 180.0);
             var num1 = longitude * (Math.PI / 180.0);
@@ -124,7 +102,7 @@ namespace Genetic
                 dist2 = GetDistance(t.crowdshipper.y_dest, t.crowdshipper.x_dest, t.destination.y, t.destination.x);
             }
             total_distance = (2 * dist1) + (2 * dist2);            
-            total_travel_time = (total_distance/1000) / avg_speed;            
+            total_travel_time = (total_distance) / avg_speed;            
             profit = 15 - (1 * total_travel_time);
             t.profit = profit;
             //Console.WriteLine("total dist: {0}", total_distance);
@@ -270,9 +248,7 @@ namespace Genetic
         {            
 
             int population_size = 100;
-            int number_of_iterations = 1;
-
-            create_tripslist(); // done    
+            int number_of_iterations = 1;            
 
             Generate_Initial_Population(population_size);
             // create as many possible assignments as the size given
