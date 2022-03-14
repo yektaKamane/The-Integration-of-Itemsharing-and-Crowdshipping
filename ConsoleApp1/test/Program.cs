@@ -47,7 +47,7 @@ namespace AlgorithmTesting
         public Node destination;
         public Trip crowdshipper;
 
-        public int type_of_delivery;  // 0 : self source, 1 : home delivery, 2 : neighborhood delivery, null : infeasible
+        public int type_of_delivery;  //0: not_set, 1 : self source, 2 : home delivery, 3 : neighborhood delivery, 4: infeasible
         public double abs_distance; // distance between src and dest (used for selfsourcing)
         public double crowdshipper_detour; // in case of home_del: _ , neighborhood: _
         public double profit;   // profit of the assignment : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
@@ -70,7 +70,11 @@ namespace AlgorithmTesting
         public static List<Node> supplier_nodes = new List<Node>();
         public static List<Node> demander_nodes = new List<Node>();
         public static List<Trip> crowdshipper_nodes = new List<Trip>();
-        
+
+        public static List<AssignedTriple> tuples_sup_req = new List<AssignedTriple>();
+        public static List<AssignedTriple> tuples_sup_crowd = new List<AssignedTriple>();
+        public static List<AssignedTriple> tuples_req_crowd = new List<AssignedTriple>();
+
         // Change this out of hardcode
         static int data_samples = 200;
         static int get_data_size()
@@ -319,7 +323,7 @@ namespace AlgorithmTesting
                 if (distance / 30.0 < 10)
                 { // if detour time is less than f_dtr
                     assignedTuple.abs_distance = distance;
-                    assignedTuple.type_of_delivery = 0;
+                    assignedTuple.type_of_delivery = 1;
                     assignedTuple.profit = 10;
                 }
                 
@@ -366,7 +370,7 @@ namespace AlgorithmTesting
             double profit = 0.0;
             for (int i=0; i< list.Count; i++)
             {
-                if (list[i].type_of_delivery == 0)
+                if (list[i].type_of_delivery == 1)
                 {
                     profit += list[i].profit;
                 }
@@ -405,7 +409,7 @@ namespace AlgorithmTesting
             var matrix_sup_req = generateMatrix_sup_req();            
             var hunAlgorithm_sup_req = new HungarianAlgorithm(matrix_sup_req);
             var result_sup_req = hunAlgorithm_sup_req.Run();
-            List<AssignedTriple> tuples_sup_req = create_ssrc_tuples(result_sup_req);
+            tuples_sup_req = create_ssrc_tuples(result_sup_req);
             print_ssrc_result(tuples_sup_req);
 
 
@@ -413,23 +417,19 @@ namespace AlgorithmTesting
             var matrix_sup_crowd = generateMatrix_sup_crowd();
             var hunAlgorithm_sup_crowd = new HungarianAlgorithm(matrix_sup_crowd);
             var result_sup_crowd = hunAlgorithm_sup_crowd.Run();
-            List<AssignedTriple> tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
+            tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
 
             // Running the Hungarian on Requests and Crowdshipper
             var matrix_req_crowd = generateMatrix_req_crowd();
             var hunAlgorithm_req_crowd = new HungarianAlgorithm(matrix_sup_crowd);
             var result_req_crowd = hunAlgorithm_req_crowd.Run();
-            List<AssignedTriple> tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
+            tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
 
 
-            // This list holds tuples of assigned sources and destinations
-            // while it would be better if there were 3 nodes in the assignment triple 
-            // and one of them would be the crowdshipper --> diff kind of node
-
-            //var genAlgorithm = new GeneticAlgorithm(tuples);
+            var genAlgorithm = new GeneticAlgorithm();
 
             // This should change to -> var result = genAlgorithm.Run();
-            // genAlgorithm.Run();
+            genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;

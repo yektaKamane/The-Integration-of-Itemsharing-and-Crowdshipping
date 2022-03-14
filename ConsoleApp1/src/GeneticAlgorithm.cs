@@ -18,19 +18,11 @@ namespace Genetic
         static HttpClient client = new HttpClient();
         private readonly Random random = new Random();
 
-        private List<double> fitness_values = new List<double>();                
-        private List<AlgorithmTesting.AssignedTriple> triples = new List<AlgorithmTesting.AssignedTriple>();
-        private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
+        private List<double> fitness_values = new List<double>();
+        //private List<AlgorithmTesting.AssignedTriple> triples = new List<AlgorithmTesting.AssignedTriple>();
+        //private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
        
-        public GeneticAlgorithm(List<AlgorithmTesting.AssignedTriple> a)
-        {
-            triples = a;
-            // This initial population here has a null for all the trips
-            // The actual initial population must be generated from this, 
-            // after running the function create_tripslist()
-        }
-
         public void print_list(List<AlgorithmTesting.AssignedTriple> list, int n)
         {
             int len = list.Count;
@@ -69,9 +61,33 @@ namespace Genetic
                 }
                 Console.WriteLine("]\n");
             }
-
         }
 
+        public static void remove_from_list_of_nodes(List<AlgorithmTesting.Node> list, AlgorithmTesting.Node node)
+        {
+            int i = 0;
+            while (i< list.Count)
+            {
+                if (list[i].x == node.x && list[i].y == node.y) 
+                {
+                    list.RemoveAt(i);
+                }
+                i++;
+            }
+        }
+        public static void remove_from_list_of_trips(List<AlgorithmTesting.Trip> list, AlgorithmTesting.Trip trip)
+        {
+            int i = 0;
+            while (i < list.Count)
+            {
+                if (list[i].x_dest == trip.x_dest && list[i].y_dest == trip.y_dest && 
+                    list[i].x_src == trip.x_src && list[i].y_src == trip.y_src)
+                {
+                    list.RemoveAt(i);
+                }
+                i++;
+            }
+        }
 
         public static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
         {
@@ -126,26 +142,60 @@ namespace Genetic
             }                                   
         }
 
-        public bool check_trip_feasibility(AlgorithmTesting.Trip trip, int n)
-        {            
-            //Console.WriteLine("trip : {0}, {1} -> {2}, {3}", trip.y_src, trip.x_src, trip.y_dest, trip.x_dest);
-            // n is index of assignment in the triples list            
-            // if type is home delivery:
-            double direct_trip_duration = GetDistance(trip.y_src, trip.x_src, trip.y_dest, trip.x_dest) / 30.0;
-            //double detour_duration = GetDistance(trip.y_src, trip.x_src, triples[n].source.y, triples[n].source.x) / 30.0;
-            double detour_duration = GetDistance(trip.y_src, trip.x_src, triples[n].source.y, triples[n].source.x)
-                                   + GetDistance(triples[n].source.y, triples[n].source.x, triples[n].destination.y, triples[n].destination.x)
-                                   + GetDistance(triples[n].destination.y, triples[n].destination.x, trip.y_dest, trip.x_dest)
-                                   - direct_trip_duration;
-            detour_duration /= 30.0;
-            // f_dtr_k = 0.2 * tk
-            //Console.WriteLine("direct_trip_duration: {0}\ndetour_duration: {1}\nf_dtr_k: {2}", direct_trip_duration, detour_duration, 0.2 * direct_trip_duration);
-            if (0.2 * direct_trip_duration > detour_duration)
+        public bool check_feasibility(AlgorithmTesting.AssignedTriple assigned, int n)
+        {
+            // assigned is the object we wanna check feasiblity
+            // n is the type of assignment
+            double speed = 30.0; // km per hour
+            if (n == 0)
             {
-                Console.WriteLine(n);
-                Console.WriteLine("direct_trip_duration: {0}\ndetour_duration: {1}\nf_dtr_k: {2}", direct_trip_duration, detour_duration, 0.2 * direct_trip_duration);
-                return true;
+                // check ssrc condition i.e.  t < 10 min
+                double distance = GetDistance(assigned.source.y, assigned.source.x, assigned.destination.y, assigned.destination.x);
+                double time = distance / speed;
+                if (time < 10)
+                {                    
+                    // 10 is the ssrc flexibility
+                    assigned.type_of_delivery = 1;
+                    return true;
+                }
             }
+            if (n == 1)
+            {
+                // check home_del condition
+                double direct_trip_distance = GetDistance(assigned.crowdshipper.y_src, assigned.crowdshipper.x_src, assigned.crowdshipper.y_dest, assigned.crowdshipper.x_dest);
+                double direct_trip_duration = direct_trip_distance / speed;
+                double detour_distance = GetDistance(assigned.crowdshipper.y_src, assigned.crowdshipper.x_src, assigned.source.y, assigned.source.x)
+                                   + GetDistance(assigned.source.y, assigned.source.x, assigned.destination.y, assigned.destination.x)
+                                   + GetDistance(assigned.destination.y, assigned.destination.x, assigned.crowdshipper.y_dest, assigned.crowdshipper.x_dest)
+                                   - direct_trip_distance;
+                double detour_duration = detour_distance / speed;
+                if (0.2 * direct_trip_duration > detour_duration)
+                {
+                    assigned.type_of_delivery = 2;
+                    return true;
+                }
+
+            }
+
+            if (n == 2)
+            {
+                // check neighborhood_del conditions
+                double direct_trip_distance = GetDistance(assigned.crowdshipper.y_src, assigned.crowdshipper.x_src, assigned.crowdshipper.y_dest, assigned.crowdshipper.x_dest);
+                double direct_trip_duration = direct_trip_distance / speed;
+                double detour_distance = GetDistance(assigned.crowdshipper.y_src, assigned.crowdshipper.x_src, assigned.source.y, assigned.source.x)
+                                   + GetDistance(assigned.source.y, assigned.source.x, assigned.destination.y, assigned.destination.x)                                   
+                                   - direct_trip_distance;
+                double detour_duration = detour_distance / speed;
+
+                double demander_distance = GetDistance(assigned.destination.y, assigned.destination.x, assigned.crowdshipper.y_dest, assigned.crowdshipper.x_dest);
+                double demander_duration = demander_distance / speed;
+                if ((0.2 * direct_trip_duration > detour_duration) && (demander_duration < 10))
+                {
+                    assigned.type_of_delivery = 3;
+                    return true;
+                }
+            }
+
             return false;
         }
 
@@ -154,43 +204,102 @@ namespace Genetic
 
             for(int i=0; i<population_size; i++)
             {
-                // Get a copy from the trips list
-                List<AlgorithmTesting.Trip> tripsCloned = new List<AlgorithmTesting.Trip>();
-                for (int k=0; k<trips.Count; k++)
+                // Get a copy from 6 lists
+                // Supplies 
+                List<AlgorithmTesting.Node> supplies = new List<AlgorithmTesting.Node>();
+                for (int k=0; k< AlgorithmTesting.Program.supplier_nodes.Count; k++)
                 {
-                    var temp = new AlgorithmTesting.Trip(trips[k].x_src, trips[k].y_src, trips[k].x_dest, trips[k].y_dest);
-                    tripsCloned.Add(temp);
+                    var temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.supplier_nodes[k].x, AlgorithmTesting.Program.supplier_nodes[k].y);
+                    supplies.Add(temp);
+                }
+                // Requests 
+                List<AlgorithmTesting.Node> requests = new List<AlgorithmTesting.Node>();
+                for (int k = 0; k < AlgorithmTesting.Program.demander_nodes.Count; k++)
+                {
+                    var temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.demander_nodes[k].x, AlgorithmTesting.Program.demander_nodes[k].y);
+                    requests.Add(temp);
+                }
+                // Crowdshippers 
+                List<AlgorithmTesting.Trip> crowdshippers = new List<AlgorithmTesting.Trip>();
+                for (int k = 0; k < AlgorithmTesting.Program.crowdshipper_nodes.Count; k++)
+                {
+                    var temp = new AlgorithmTesting.Trip(AlgorithmTesting.Program.crowdshipper_nodes[k].x_src,
+                        AlgorithmTesting.Program.crowdshipper_nodes[k].y_src, AlgorithmTesting.Program.crowdshipper_nodes[k].x_dest,
+                        AlgorithmTesting.Program.crowdshipper_nodes[k].y_dest);
+                    crowdshippers.Add(temp);
+                }
+
+                // Sup_Req
+                List<AlgorithmTesting.AssignedTriple> sup_req = new List<AlgorithmTesting.AssignedTriple>();
+                for (int k = 0; k < AlgorithmTesting.Program.tuples_sup_req.Count; k++)
+                {
+                    AlgorithmTesting.Node sup = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_sup_req[k].source.x, AlgorithmTesting.Program.tuples_sup_req[k].source.y);
+                    AlgorithmTesting.Node req = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_sup_req[k].destination.x, AlgorithmTesting.Program.tuples_sup_req[k].destination.y);
+                    var temp = new AlgorithmTesting.AssignedTriple(sup, req, null);
+                    sup_req.Add(temp);
+                }
+
+                // Sup_Crowd
+                List<AlgorithmTesting.AssignedTriple> sup_crowd = new List<AlgorithmTesting.AssignedTriple>();
+                for (int k = 0; k < AlgorithmTesting.Program.tuples_sup_crowd.Count; k++)
+                {
+                    AlgorithmTesting.Node sup = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_sup_crowd[k].source.x, AlgorithmTesting.Program.tuples_sup_crowd[k].source.y);
+                    AlgorithmTesting.Trip crowd = new AlgorithmTesting.Trip(AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.x_src,
+                                                                            AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.y_src,
+                                                                            AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.x_dest,
+                                                                            AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.y_dest);
+
+                    var temp = new AlgorithmTesting.AssignedTriple(sup, null, crowd);
+                    sup_crowd.Add(temp);
+                }
+
+                // Req_Crowd
+                List<AlgorithmTesting.AssignedTriple> req_crowd = new List<AlgorithmTesting.AssignedTriple>();
+                for (int k = 0; k < AlgorithmTesting.Program.tuples_req_crowd.Count; k++)
+                {
+                    AlgorithmTesting.Node req = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_req_crowd[k].destination.x, AlgorithmTesting.Program.tuples_req_crowd[k].destination.y);
+                    AlgorithmTesting.Trip crowd = new AlgorithmTesting.Trip(AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.x_src,
+                                                                            AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.y_src,
+                                                                            AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.x_dest,
+                                                                            AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.y_dest);
+
+                    var temp = new AlgorithmTesting.AssignedTriple(null, req, crowd);
+                    req_crowd.Add(temp);
                 }
 
                 List<AlgorithmTesting.AssignedTriple> feasibleSolution = new List<AlgorithmTesting.AssignedTriple>();
-                int tripsLen = tripsCloned.Count;                
+                int len = supplies.Count; // let's assume all the lengths are the same (200)
                 int j = 0;                
-                while (tripsLen > 0)
+                while (j<10)
                 {
-                    // Randomly get a member from the crowdshippers
-                    // Pick a random number in range of tripsCloned                  
-                    int randomNum = random.Next(tripsLen);                    
-                    var selectedTrip = tripsCloned[randomNum];
-
-                    // if the random crowdshipper is compatible with assignment j
-                    // then make a new assignment object and add it to the list
-                    // remove the crowdshipper from the copylist
-                    if ( check_trip_feasibility(selectedTrip, j) )
+                    if (supplies.Count == 0 && requests.Count == 0 && crowdshippers.Count == 0)
                     {
-                        // bring the next 3 lines out of the if condition
-                        var source = new AlgorithmTesting.Node(triples[j].source.x, triples[j].source.y);
-                        var destination = new AlgorithmTesting.Node(triples[j].destination.x, triples[j].destination.y);
-                        var assignmentTemp = new AlgorithmTesting.AssignedTriple(source, destination, selectedTrip);
-                        calculate_profit(assignmentTemp);
+                        // if all the items are assigned get out of the loop
+                        break;
+                    }
+                    // Randomly get a number between 0, 1, 2
+                    // Self_Sourcing, Home_Delivery, Neighborhood_Delivery
+                    int randomNum = random.Next(3);                    
+                    if (randomNum == 0)
+                    {                        
+                        int rand = random.Next(sup_req.Count);                     
+                        var selected = sup_req[rand];                                                
+                        while (!check_feasibility(selected, 0))
+                        {
+                            rand = random.Next(sup_req.Count);
+                            selected = sup_req[rand];
+                        }
+                        feasibleSolution.Add(selected);                        
+                        sup_req.Remove(selected);
+                        remove_from_list_of_nodes(supplies, selected.source);                        
+                        remove_from_list_of_nodes(requests, selected.destination);                        
+                    }
+                    if (randomNum == 1)
+                    {
 
-                        feasibleSolution.Add(assignmentTemp);
-                        tripsCloned.RemoveAt(randomNum);
-                        tripsLen = tripsCloned.Count;
-                        j++;
                     }
 
-                    // if not compatible continue
-                    else { continue; }                    
+                    j++;             
 
                 }
 
