@@ -296,7 +296,8 @@ namespace Genetic
                     }
                     if (randomNum == 1)
                     {
-
+                        // don't forget to add the selected whatever to the assignment 
+                        // before checking feasibility
                     }
 
                     j++;             
