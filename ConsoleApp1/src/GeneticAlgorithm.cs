@@ -89,6 +89,42 @@ namespace Genetic
             }
         }
 
+        public static void remove_from_list_of_triples(List<AlgorithmTesting.AssignedTriple> list, AlgorithmTesting.AssignedTriple triple, int x)
+        {
+            //Console.WriteLine("tripl:\n src: {0}, {1} dest: {2}, {3} trip: ({4}, {5}) -> ({6}, {7})",
+            //    triple.source.x, triple.source.y, triple.destination.x, triple.destination.y, triple.crowdshipper.x_src, triple.crowdshipper.y_src
+            //    , triple.crowdshipper.x_dest, triple.crowdshipper.y_dest);
+            
+            int i = 0;
+            if (x == 1)
+            {
+                while (i < list.Count)
+                {
+                    if (list[i].source.x == triple.source.x && list[i].source.y == triple.source.y &&                        
+                        list[i].crowdshipper.x_dest == triple.crowdshipper.x_dest && list[i].crowdshipper.x_src == triple.crowdshipper.x_src &&
+                        list[i].crowdshipper.y_dest == triple.crowdshipper.y_dest && list[i].crowdshipper.y_src == triple.crowdshipper.y_src)
+                    {
+                        list.RemoveAt(i);
+                    }
+                    i++;
+                }
+            }
+            if(x == 2) 
+            {
+                while (i < list.Count)
+                {
+                    if (list[i].destination.x == triple.destination.x && list[i].destination.y == triple.destination.y &&
+                        list[i].crowdshipper.x_dest == triple.crowdshipper.x_dest && list[i].crowdshipper.x_src == triple.crowdshipper.x_src &&
+                        list[i].crowdshipper.y_dest == triple.crowdshipper.y_dest && list[i].crowdshipper.y_src == triple.crowdshipper.y_src)
+                    {
+                        list.RemoveAt(i);
+                    }
+                    i++;
+                }
+            }
+            
+        }
+
         public static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
         {
             var d1 = latitude * (Math.PI / 180.0);
@@ -270,22 +306,29 @@ namespace Genetic
                 List<AlgorithmTesting.AssignedTriple> feasibleSolution = new List<AlgorithmTesting.AssignedTriple>();
                 int len = supplies.Count; // let's assume all the lengths are the same (200)
                 int j = 0;                
-                while (j<10)
+                while (true)
                 {
-                    if (supplies.Count == 0 && requests.Count == 0 && crowdshippers.Count == 0)
+                    if (supplies.Count == 0 || requests.Count == 0 || crowdshippers.Count == 0)
                     {
                         // if all the items are assigned get out of the loop
                         break;
                     }
                     // Randomly get a number between 0, 1, 2
                     // Self_Sourcing, Home_Delivery, Neighborhood_Delivery
-                    int randomNum = random.Next(3);                    
+                    int randomNum = random.Next(3);
+                    //Console.WriteLine(randomNum);
                     if (randomNum == 0)
-                    {                        
+                    {
+                        int counter = 0;
                         int rand = random.Next(sup_req.Count);                     
                         var selected = sup_req[rand];                                                
                         while (!check_feasibility(selected, 0))
                         {
+                            counter++;
+                            if (counter > population_size)
+                            {
+                                break;
+                            }
                             rand = random.Next(sup_req.Count);
                             selected = sup_req[rand];
                         }
@@ -298,6 +341,66 @@ namespace Genetic
                     {
                         // don't forget to add the selected whatever to the assignment 
                         // before checking feasibility
+                        int counter = 0;
+                        int rand = random.Next(req_crowd.Count);
+                        var selected_req_crowd = req_crowd[rand];
+
+                        int rand2 = random.Next(supplies.Count);
+                        var selected_sup = supplies[rand2];
+                        selected_req_crowd.source = selected_sup;                        
+
+                        while (!check_feasibility(selected_req_crowd, 1))
+                        {
+                            counter++;
+                            if (counter > population_size)
+                            {
+                                break;
+                            }
+                            rand2 = random.Next(supplies.Count);
+                            selected_sup = supplies[rand2];
+                            selected_req_crowd.source = selected_sup;
+                        }
+                        feasibleSolution.Add(selected_req_crowd);
+                        req_crowd.Remove(selected_req_crowd);                                            
+                        remove_from_list_of_nodes(supplies, selected_req_crowd.source);
+                        remove_from_list_of_nodes(requests, selected_req_crowd.destination);
+                        remove_from_list_of_trips(crowdshippers, selected_req_crowd.crowdshipper);
+                        // also remove from sup_crowd    
+                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(selected_req_crowd.source, selected_req_crowd.destination, selected_req_crowd.crowdshipper);
+                        remove_from_list_of_triples(sup_crowd, temp, 1);
+                    }
+
+                    if (randomNum == 2)
+                    {
+                        // don't forget to add the selected whatever to the assignment 
+                        // before checking feasibility
+                        int counter = 0;
+                        int rand = random.Next(sup_crowd.Count);
+                        var selected_sup_crowd = sup_crowd[rand];
+
+                        int rand2 = random.Next(requests.Count);
+                        var selected_req = requests[rand2];
+                        selected_sup_crowd.destination = selected_req;
+
+                        while (!check_feasibility(selected_sup_crowd, 2))
+                        {
+                            counter++;
+                            if (counter > population_size)
+                            {
+                                break;
+                            }
+                            rand2 = random.Next(requests.Count);
+                            selected_req = requests[rand2];
+                            selected_sup_crowd.destination = selected_req;
+                        }
+                        feasibleSolution.Add(selected_sup_crowd);
+                        sup_crowd.Remove(selected_sup_crowd);
+                        remove_from_list_of_nodes(supplies, selected_sup_crowd.source);
+                        remove_from_list_of_nodes(requests, selected_sup_crowd.destination);
+                        remove_from_list_of_trips(crowdshippers, selected_sup_crowd.crowdshipper);
+                        // also remove from req_crowd    
+                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(selected_sup_crowd.source, selected_sup_crowd.destination, selected_sup_crowd.crowdshipper);
+                        remove_from_list_of_triples(req_crowd, temp, 2);
                     }
 
                     j++;             
