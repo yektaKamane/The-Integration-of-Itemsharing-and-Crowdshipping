@@ -112,7 +112,7 @@ namespace AlgorithmTesting
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(7) + " " + reader.GetAttribute(8) + "\n";
+                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
                     }
                 }
             }
@@ -139,7 +139,7 @@ namespace AlgorithmTesting
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(7) + " " + reader.GetAttribute(8) + "\n";
+                        text += reader.GetAttribute(1) + " " + reader.GetAttribute(2) + "\n";
                     }
                 }
             }
@@ -167,7 +167,7 @@ namespace AlgorithmTesting
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(7) + "," + reader.GetAttribute(8) + " ";
+                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + " ";
                     }
                 }                
                 int randomNum2 = random.Next(dataset_size);     
@@ -187,7 +187,7 @@ namespace AlgorithmTesting
                         {
                             reader.Read();
                         }
-                        text += reader.GetAttribute(7) + "," + reader.GetAttribute(8) + "\n";
+                        text += reader.GetAttribute(1) + "," + reader.GetAttribute(2) + "\n";
                     }
                 }
             }
@@ -319,8 +319,8 @@ namespace AlgorithmTesting
                 double distance = Genetic.GeneticAlgorithm.GetDistance(source.y, source.x, destination.y, destination.x);
                 var assignedTuple = new AssignedTriple(source, destination, null);
                 //Console.WriteLine("source {0} : {1} {2}\nassigned to request{3}: {4}, {5}", i, source.x, source.y, array[i], destination.x, destination.y);
-                //Console.WriteLine("distance: {0}, time: {1}, profit: {2}", distance, distance/30.0, 10);
-                if (distance / 30.0 < 10)
+                //Console.WriteLine("distance: {0}, time: {1}, profit: {2}", distance, distance / 30.0 * 60.0, 10);
+                if (distance / 30.0 * 60.0 < 10)
                 { // if detour time is less than f_dtr
                     assignedTuple.abs_distance = distance;
                     assignedTuple.type_of_delivery = 1;
@@ -396,7 +396,7 @@ namespace AlgorithmTesting
             //var size = get_data_size();
             //create_supplies(size);
             //create_requests(size);
-            //create_crowdshippers(size);            
+            //create_crowdshippers(size);
 
             // Reading data from the file
             // and store in lists
