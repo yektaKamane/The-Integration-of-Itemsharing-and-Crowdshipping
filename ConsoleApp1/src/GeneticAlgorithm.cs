@@ -194,6 +194,29 @@ namespace Genetic
             }                                   
         }
 
+        static List<AlgorithmTesting.AssignedTriple> make_a_copy(List<AlgorithmTesting.AssignedTriple> original_list)
+        {
+            List<AlgorithmTesting.AssignedTriple> new_list = new List<AlgorithmTesting.AssignedTriple>();
+
+            for (int i=0; i<original_list.Count; i++)
+            {
+                AlgorithmTesting.Node source = new AlgorithmTesting.Node(original_list[i].source.x, original_list[i].source.y);
+                AlgorithmTesting.Node dest = new AlgorithmTesting.Node(original_list[i].destination.x, original_list[i].destination.y);
+                AlgorithmTesting.Trip crowdshipper = null;
+
+                if (original_list[i].crowdshipper != null)
+                {
+                    crowdshipper = new AlgorithmTesting.Trip(original_list[i].crowdshipper.x_src, original_list[i].crowdshipper.y_src, original_list[i].crowdshipper.x_dest, original_list[i].crowdshipper.y_dest);
+                    
+                }
+                AlgorithmTesting.AssignedTriple assign = new AlgorithmTesting.AssignedTriple(source, dest, crowdshipper);
+                assign.type_of_delivery = original_list[i].type_of_delivery;
+                calculate_profit(assign);
+                new_list.Add(assign);
+            }
+            return new_list;
+        }
+
         public bool check_feasibility(AlgorithmTesting.AssignedTriple assigned, int n)
         {
             // assigned is the object we wanna check feasiblity
@@ -457,21 +480,113 @@ namespace Genetic
         }
         public void Select_Parents()
         {
-            // Create a list that says how many of each of the members should be replicated
-            List<double> expected_counts = new List<double>();
-            List<double> actual_counts = new List<double>();
+            // Rank the chromosomes base on their fittness value
+            // Only the half top of the population go to the next generation
 
-            double sum_fitness = fitness_values.Sum();
-            double avg_fitness = sum_fitness / fitness_values.Count();
-
-            for(int i=0; i< fitness_values.Count(); i++)
+            List<int> index_keeper = new List<int>(); // holds the original indexes
+            for (int i=0; i< fitness_values.Count(); i++)
             {
-                double val = fitness_values[i] / avg_fitness;
-                expected_counts.Add(val);                
-                actual_counts.Add(Math.Round(val, MidpointRounding.AwayFromZero));
-                Console.WriteLine("{0}, {1}, {2}", fitness_values[i], expected_counts[i], actual_counts[i]);
+                index_keeper.Add(i);
             }
-        }
+
+            // Sort them according to fittness value
+            int n = fitness_values.Count();
+            for (int j=0; j < n - 1; j++)
+            {
+                for(int k=0; k < n - j - 1; k++)
+                {
+                    if(fitness_values[k] < fitness_values[k + 1])  // Descending order
+                    {
+                        double temp = fitness_values[k];
+                        fitness_values[k] = fitness_values[k + 1];
+                        fitness_values[k + 1] = temp;
+
+                        int itemp = index_keeper[k];
+                        index_keeper[k] = index_keeper[k + 1];
+                        index_keeper[k + 1] = itemp;
+
+                    }
+                }
+            }
+            Console.WriteLine("\n------------\n New Gen \n");            
+            for (int x=0; x<n; x++)
+            {
+                Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
+            }
+
+            // Create Next Generation
+            List<List<AlgorithmTesting.AssignedTriple>> next_gen = new List<List<AlgorithmTesting.AssignedTriple>>();
+
+            for(int i=0; i<n/2; i++)
+            {
+                // get the selected parent
+                var member_orig = initial_population[index_keeper[i]];
+                var member_copy = make_a_copy(member_orig);
+                List<List<AlgorithmTesting.AssignedTriple>> members = new List<List<AlgorithmTesting.AssignedTriple>>();
+                members.Add(member_orig);
+                members.Add(member_copy);
+
+                // Create two new children
+                for (int j=0; j< members.Count; j++) {                
+                    int rand1 = random.Next(members[j].Count);
+                    int rand2 = random.Next(members[j].Count);
+                    while (rand1 == rand2)
+                    {
+                        rand2 = random.Next(members[j].Count);
+                    }
+
+                    var assignment1 = members[j][rand1];
+                    var assignment2 = members[j][rand2];
+
+                    if (assignment1.type_of_delivery == 1 && assignment2.type_of_delivery != 1)
+                    {
+                        //Console.WriteLine("ssrc & home");
+                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, null);
+                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
+                        {
+                            members[j][rand1] = child1;                            
+                        }
+                        if (check_feasibility(child2, 0))
+                        {
+                            members[j][rand2] = child2;                           
+                        }
+                    }
+                    if (assignment2.type_of_delivery == 1 && assignment1.type_of_delivery != 1)
+                    {
+                        //Console.WriteLine("ssrc & home");
+                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, null);
+                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
+                        {
+                            members[j][rand1] = child1;
+                        }
+                        if (check_feasibility(child2, 0))
+                        {
+                            members[j][rand2] = child2;
+                        }
+                    }
+
+                    if (assignment1.type_of_delivery !=1 && assignment2.type_of_delivery != 1)
+                    {
+                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
+                        {
+                            members[j][rand1] = child1;
+                        }
+                        if (check_feasibility(child2, assignment2.type_of_delivery - 1))
+                        {
+                            members[j][rand2] = child2;
+                        }
+                    }
+                    next_gen.Add(members[j]);
+                }
+                                        
+            }
+            initial_population = next_gen;
+
+    }
         public void Create_Next_Generation()
         {
             // Do the mutation according to the list produced by the previous function
@@ -483,7 +598,7 @@ namespace Genetic
         {            
 
             int population_size = 100;
-            int number_of_iterations = 1;            
+            int number_of_iterations = 100;            
 
             Generate_Initial_Population(population_size);
             // create as many possible assignments as the size given
