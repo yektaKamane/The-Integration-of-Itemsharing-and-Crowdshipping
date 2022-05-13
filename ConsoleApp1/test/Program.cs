@@ -27,7 +27,7 @@ namespace AlgorithmTesting
     }
 
     public class Trip
-    { // Supply or Request objects
+    { // Crowdshipping objects
         public double x_src;
         public double y_src;
         public double x_dest;
@@ -42,13 +42,13 @@ namespace AlgorithmTesting
     }
 
     public class AssignedTriple
-    {
+    { // An assignment of supply, request and crowdshipper
         public Node source;
         public Node destination;
         public Trip crowdshipper;
 
-        public int type_of_delivery;  //0: not_set, 1 : self source, 2 : home delivery, 3 : neighborhood delivery, 4: infeasible
-        public double abs_distance; // distance between src and dest (used for selfsourcing)
+        public int type_of_delivery;  // 0: not_set, 1 : self source, 2 : home delivery, 3 : neighborhood delivery, 4: infeasible
+        public double abs_distance;   // distance between src and dest (used for selfsourcing)
         public double crowdshipper_detour; // in case of home_del: _ , neighborhood: _
         public double profit;   // profit of the assignment : ( r_ssrc ) or ( r_home - c_dtr * t_dtr )
         public double cost;     // how much we must pay the crowdshipper : ( c_dtr * t_dtr )
@@ -56,6 +56,7 @@ namespace AlgorithmTesting
         // c_dtr = 30$ per hour
         // r_ssrc = 10$
         // r_home = 15$
+
         public AssignedTriple(Node a, Node b, Trip c)
         {
             this.source = a;
@@ -76,7 +77,7 @@ namespace AlgorithmTesting
         public static List<AssignedTriple> tuples_req_crowd = new List<AssignedTriple>();
 
         // Change this out of hardcode
-        static int data_samples = 200;
+        //static int data_samples = 200;
         static int get_data_size()
         {
             int dataset_size = 0;
@@ -91,7 +92,7 @@ namespace AlgorithmTesting
             return dataset_size;
         }
 
-        static void create_supplies(int dataset_size) 
+        static void create_supplies(int dataset_size, int data_samples, int index) 
         {
             // Supplies 
             string text = "";
@@ -116,9 +117,15 @@ namespace AlgorithmTesting
                     }
                 }
             }
-            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\supplies.txt", text);
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\";
+            // If directory does not exist, create it
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(dir + "supplies.txt", text);
         }
-        static void create_requests(int dataset_size)
+        static void create_requests(int dataset_size, int data_samples, int index)
         {
             // Requests 
             string text = "";
@@ -143,9 +150,15 @@ namespace AlgorithmTesting
                     }
                 }
             }
-            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\requests.txt", text);
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\";
+            // If directory does not exist, create it
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(dir + "requests.txt", text);            
         }
-        static void create_crowdshippers(int dataset_size) 
+        static void create_crowdshippers(int dataset_size, int data_samples, int index) 
         { 
             // Crowdshipper
             string text = "";
@@ -191,7 +204,13 @@ namespace AlgorithmTesting
                     }
                 }
             }
-            File.WriteAllText(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt", text);
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\";
+            // If directory does not exist, create it
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(dir + "crowdshipper.txt", text);            
         }
 
         static void create_supp_nodes()
@@ -391,15 +410,29 @@ namespace AlgorithmTesting
             return resultVal;
         }
 
-        static int Main()
+        static void data_generator(int number_of_datasets, int number_of_instances)
         {
-            //var size = get_data_size();
-            //create_supplies(size);
-            //create_requests(size);
-            //create_crowdshippers(size);
+            var size = get_data_size();
+            for (int i=0; i<number_of_datasets; i++)
+            {
+                create_supplies(size, number_of_instances, i+1);
+                create_requests(size, number_of_instances, i+1);
+                create_crowdshippers(size, number_of_instances, i+1);
+            }
+        }
+
+        static int Main()
+        {            
+
+            // Create data
+            // 10 datasets of size 200
+            // data_generator(10, 200);
+
 
             // Reading data from the file
             // and store in lists
+
+            // Gotta make a loop here
             create_supp_nodes();
             create_req_nodes();
             create_trips();

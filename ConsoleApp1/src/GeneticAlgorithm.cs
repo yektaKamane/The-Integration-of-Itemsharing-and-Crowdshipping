@@ -581,11 +581,9 @@ namespace Genetic
                         }
                     }
                     next_gen.Add(members[j]);
-                }
-                                        
+                }                                        
             }
             initial_population = next_gen;
-
     }
         public void Create_Next_Generation()
         {
@@ -593,12 +591,11 @@ namespace Genetic
         }
 
 
-
         public void Run()
         {            
 
             int population_size = 100;
-            int number_of_iterations = 100;            
+            int number_of_iterations = 300;            
 
             Generate_Initial_Population(population_size);
             // create as many possible assignments as the size given
@@ -614,8 +611,6 @@ namespace Genetic
 
                 Create_Next_Generation();
                 // crossover and mutation baby B)
-
-
             }
         }
 
