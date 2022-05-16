@@ -23,6 +23,8 @@ namespace Genetic
         //private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
        
+
+
         public void print_list(List<AlgorithmTesting.AssignedTriple> list, int n)
         {
             int len = list.Count;
@@ -137,7 +139,7 @@ namespace Genetic
             var d3 = Math.Pow(Math.Sin((d2 - d1) / 2.0), 2.0) + Math.Cos(d1) * Math.Cos(d2) * Math.Pow(Math.Sin(num2 / 2.0), 2.0);
 
             var res = 6376500.0 * (2.0 * Math.Atan2(Math.Sqrt(d3), Math.Sqrt(1.0 - d3)));
-            return (res + 0.3 * res) / 1000;
+            return (res * 3) / 1000;
         }
         static void calculate_profit(AlgorithmTesting.AssignedTriple t)
         {
@@ -508,11 +510,12 @@ namespace Genetic
                     }
                 }
             }
-            Console.WriteLine("\n------------\n New Gen \n");            
-            for (int x=0; x<n; x++)
-            {
-                Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
-            }
+
+            //Console.WriteLine("\n------------\n New Gen \n");            
+            //for (int x=0; x<n; x++)
+            //{
+            //    Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
+            //}
 
             // Create Next Generation
             List<List<AlgorithmTesting.AssignedTriple>> next_gen = new List<List<AlgorithmTesting.AssignedTriple>>();
@@ -593,9 +596,8 @@ namespace Genetic
 
         public void Run()
         {            
-
             int population_size = 100;
-            int number_of_iterations = 300;            
+            int number_of_iterations = 400;            
 
             Generate_Initial_Population(population_size);
             // create as many possible assignments as the size given
@@ -612,6 +614,7 @@ namespace Genetic
                 Create_Next_Generation();
                 // crossover and mutation baby B)
             }
+            Console.WriteLine("Total profit: {0}\n", fitness_values[0]);
         }
 
 

@@ -213,10 +213,12 @@ namespace AlgorithmTesting
             File.WriteAllText(dir + "crowdshipper.txt", text);            
         }
 
-        static void create_supp_nodes()
+        static void create_supp_nodes(int index)
         {
-            string[] supplies = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\supplies.txt");
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\supplies.txt";
+            string[] supplies = System.IO.File.ReadAllLines(dir);
             int supplieslen = supplies.Length;
+            supplier_nodes.Clear();
             for (int i = 0; i < supplieslen; i++)
             {
                 string[] supp_digits = supplies[i].Split(' ');
@@ -227,10 +229,12 @@ namespace AlgorithmTesting
                 supplier_nodes.Add(node);
             }
         }
-        static void create_req_nodes()
+        static void create_req_nodes(int index)
         {
-            string[] demands = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\requests.txt");
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\requests.txt";
+            string[] demands = System.IO.File.ReadAllLines(dir);
             int demandslen = demands.Length;
+            demander_nodes.Clear();
             for (int i = 0; i < demandslen; i++)
             {
                 string[] demand_digits = demands[i].Split(' ');
@@ -241,11 +245,12 @@ namespace AlgorithmTesting
                 demander_nodes.Add(node);
             }
         }
-        static void create_trips()
+        static void create_trips(int index)
         {
-            string[] crowdshippers = System.IO.File.ReadAllLines(@"D:\Project_Data\Generated_Coordinates\crowdshipper.txt");
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\crowdshipper.txt";
+            string[] crowdshippers = System.IO.File.ReadAllLines(dir);
             int crowdshipperslen = crowdshippers.Length;
-
+            crowdshipper_nodes.Clear();
             for (int i = 0; i < crowdshipperslen; i++)
             {
                 string[] coords = crowdshippers[i].Split(' ');
@@ -422,47 +427,82 @@ namespace AlgorithmTesting
         }
 
         static int Main()
-        {            
+        {
 
             // Create data
             // 10 datasets of size 200
-            // data_generator(10, 200);
+            int dataset_size = 200;
+            int number_of_sets = 10;
+
+            // data_generator(number_of_sets, dataset_size);
 
 
             // Reading data from the file
             // and store in lists
 
             // Gotta make a loop here
-            create_supp_nodes();
-            create_req_nodes();
-            create_trips();
+
+            for (int i=0; i<number_of_sets; i++)
+            {
+                create_supp_nodes(i+1);
+                create_req_nodes(i+1);
+                create_trips(i+1);
+
+                // Running the Hungarian on Supply and Requests
+                var matrix_sup_req = generateMatrix_sup_req();
+                var hunAlgorithm_sup_req = new HungarianAlgorithm(matrix_sup_req);
+                var result_sup_req = hunAlgorithm_sup_req.Run();
+                tuples_sup_req = create_ssrc_tuples(result_sup_req);
+                print_ssrc_result(tuples_sup_req);
+
+                // Running the Hungarian on Supply and Crowdshipper
+                var matrix_sup_crowd = generateMatrix_sup_crowd();
+                var hunAlgorithm_sup_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+                var result_sup_crowd = hunAlgorithm_sup_crowd.Run();
+                tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
+
+                // Running the Hungarian on Requests and Crowdshipper
+                var matrix_req_crowd = generateMatrix_req_crowd();
+                var hunAlgorithm_req_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+                var result_req_crowd = hunAlgorithm_req_crowd.Run();
+                tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
+
+                var genAlgorithm = new GeneticAlgorithm();
+
+                // This should change to -> var result = genAlgorithm.Run();
+                genAlgorithm.Run();
+            }
+
+            //create_supp_nodes();
+            //create_req_nodes();
+            //create_trips();
 
 
-            // Running the Hungarian on Supply and Requests
-            var matrix_sup_req = generateMatrix_sup_req();            
-            var hunAlgorithm_sup_req = new HungarianAlgorithm(matrix_sup_req);
-            var result_sup_req = hunAlgorithm_sup_req.Run();
-            tuples_sup_req = create_ssrc_tuples(result_sup_req);
-            print_ssrc_result(tuples_sup_req);
+            //// Running the Hungarian on Supply and Requests
+            //var matrix_sup_req = generateMatrix_sup_req();            
+            //var hunAlgorithm_sup_req = new HungarianAlgorithm(matrix_sup_req);
+            //var result_sup_req = hunAlgorithm_sup_req.Run();
+            //tuples_sup_req = create_ssrc_tuples(result_sup_req);
+            //print_ssrc_result(tuples_sup_req);
 
 
-            // Running the Hungarian on Supply and Crowdshipper
-            var matrix_sup_crowd = generateMatrix_sup_crowd();
-            var hunAlgorithm_sup_crowd = new HungarianAlgorithm(matrix_sup_crowd);
-            var result_sup_crowd = hunAlgorithm_sup_crowd.Run();
-            tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
+            //// Running the Hungarian on Supply and Crowdshipper
+            //var matrix_sup_crowd = generateMatrix_sup_crowd();
+            //var hunAlgorithm_sup_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+            //var result_sup_crowd = hunAlgorithm_sup_crowd.Run();
+            //tuples_sup_crowd = create_sup_crowd_tuples(result_sup_crowd);
 
-            // Running the Hungarian on Requests and Crowdshipper
-            var matrix_req_crowd = generateMatrix_req_crowd();
-            var hunAlgorithm_req_crowd = new HungarianAlgorithm(matrix_sup_crowd);
-            var result_req_crowd = hunAlgorithm_req_crowd.Run();
-            tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
+            //// Running the Hungarian on Requests and Crowdshipper
+            //var matrix_req_crowd = generateMatrix_req_crowd();
+            //var hunAlgorithm_req_crowd = new HungarianAlgorithm(matrix_sup_crowd);
+            //var result_req_crowd = hunAlgorithm_req_crowd.Run();
+            //tuples_req_crowd = create_req_crowd_tuples(result_req_crowd);
 
 
-            var genAlgorithm = new GeneticAlgorithm();
+            //var genAlgorithm = new GeneticAlgorithm();
 
-            // This should change to -> var result = genAlgorithm.Run();
-            genAlgorithm.Run();
+            //// This should change to -> var result = genAlgorithm.Run();
+            //genAlgorithm.Run();
 
             Console.ReadKey();
             return 0;
