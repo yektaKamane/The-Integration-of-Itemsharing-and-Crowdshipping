@@ -470,7 +470,7 @@ namespace AlgorithmTesting
                 var genAlgorithm = new GeneticAlgorithm();
 
                 // This should change to -> var result = genAlgorithm.Run();
-                genAlgorithm.Run();
+                genAlgorithm.Run(i+1);
             }
 
             //create_supp_nodes();

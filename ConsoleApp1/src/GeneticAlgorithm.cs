@@ -23,7 +23,43 @@ namespace Genetic
         //private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
        
+        public void write_results_in_file(int index)
+        {
+            // Write all the matches
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result";
+            //Console.WriteLine(initial_population[0].Count);
+            for (int i=0; i<initial_population[0].Count; i++)
+            {
+                string assignment = "";
+                assignment += "\n" + (i + 1).ToString() + ".\n";
+                assignment += "Type of delivery: ";
+                int type = initial_population[0][i].type_of_delivery;
+                if (type == 1) { assignment += "self-source\n"; }
+                if (type == 2) { assignment += "home delivery\n"; }
+                if (type == 3) { assignment += "neighborhood delivery\n"; }
+                if (type == 4) { assignment += "Unmatched\n"; }
+                assignment += "Profit: " + initial_population[0][i].profit + "\n";
+                assignment += "Supplier: " + initial_population[0][i].source.x.ToString() + ", " + initial_population[0][i].source.y.ToString() + "\n";
+                assignment += "Request: " + initial_population[0][i].destination.x.ToString() + ", " + initial_population[0][i].destination.y.ToString() + "\n";
+                if(initial_population[0][i].crowdshipper == null)
+                {
+                    assignment += "Crowdshipper: -\n";
+                }
+                else
+                {
+                    assignment += assignment += "Crowdshipper: (" + initial_population[0][i].crowdshipper.x_src.ToString() + ", " + initial_population[0][i].crowdshipper.y_src.ToString() + ")"
+                        + " -> (" + initial_population[0][i].crowdshipper.x_dest.ToString() + ", " + initial_population[0][i].crowdshipper.y_dest.ToString() + ")\n";                        
+                }                
 
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+                File.WriteAllText(dir + "\\assignments.txt", assignment);
+            }
+            
+            
+        }
 
         public void print_list(List<AlgorithmTesting.AssignedTriple> list, int n)
         {
@@ -75,10 +111,11 @@ namespace Genetic
             {
                 if (list[i].x == node.x && list[i].y == node.y) 
                 {
-                    list.RemoveAt(i);
+                    list.RemoveAt(i);                    
                 }
                 i++;
-            }
+            }  
+            
         }
         public static void remove_from_list_of_trips(List<AlgorithmTesting.Trip> list, AlgorithmTesting.Trip trip)
         {
@@ -88,7 +125,7 @@ namespace Genetic
                 if (list[i].x_dest == trip.x_dest && list[i].y_dest == trip.y_dest && 
                     list[i].x_src == trip.x_src && list[i].y_src == trip.y_src)
                 {
-                    list.RemoveAt(i);
+                    list.RemoveAt(i);                    
                 }
                 i++;
             }
@@ -105,29 +142,39 @@ namespace Genetic
             {
                 while (i < list.Count)
                 {
-                    if (list[i].source.x == triple.source.x && list[i].source.y == triple.source.y &&                        
+                    if (                      
                         list[i].crowdshipper.x_dest == triple.crowdshipper.x_dest && list[i].crowdshipper.x_src == triple.crowdshipper.x_src &&
                         list[i].crowdshipper.y_dest == triple.crowdshipper.y_dest && list[i].crowdshipper.y_src == triple.crowdshipper.y_src)
                     {
-                        list.RemoveAt(i);
+                        list.RemoveAt(i);                        
                     }
                     i++;
                 }
             }
-            if(x == 2) 
+
+            if (x == 2)
             {
                 while (i < list.Count)
                 {
-                    if (list[i].destination.x == triple.destination.x && list[i].destination.y == triple.destination.y &&
-                        list[i].crowdshipper.x_dest == triple.crowdshipper.x_dest && list[i].crowdshipper.x_src == triple.crowdshipper.x_src &&
-                        list[i].crowdshipper.y_dest == triple.crowdshipper.y_dest && list[i].crowdshipper.y_src == triple.crowdshipper.y_src)
+                    if (list[i].destination.x == triple.destination.x && list[i].destination.y == triple.destination.y)
                     {
                         list.RemoveAt(i);
                     }
                     i++;
                 }
             }
-            
+            if (x == 3)
+            {
+                while (i < list.Count)
+                {
+                    if (list[i].source.x == triple.source.x && list[i].source.y == triple.source.y)
+                    {
+                        list.RemoveAt(i);
+                    }
+                    i++;
+                }
+            }
+
         }
 
         public static double GetDistance(double longitude, double latitude, double otherLongitude, double otherLatitude)
@@ -286,21 +333,21 @@ namespace Genetic
                 List<AlgorithmTesting.Node> supplies = new List<AlgorithmTesting.Node>();
                 for (int k=0; k< AlgorithmTesting.Program.supplier_nodes.Count; k++)
                 {
-                    var temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.supplier_nodes[k].x, AlgorithmTesting.Program.supplier_nodes[k].y);
+                    AlgorithmTesting.Node temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.supplier_nodes[k].x, AlgorithmTesting.Program.supplier_nodes[k].y);
                     supplies.Add(temp);
-                }
+                }                
                 // Requests 
                 List<AlgorithmTesting.Node> requests = new List<AlgorithmTesting.Node>();
                 for (int k = 0; k < AlgorithmTesting.Program.demander_nodes.Count; k++)
                 {
-                    var temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.demander_nodes[k].x, AlgorithmTesting.Program.demander_nodes[k].y);
+                    AlgorithmTesting.Node temp = new AlgorithmTesting.Node(AlgorithmTesting.Program.demander_nodes[k].x, AlgorithmTesting.Program.demander_nodes[k].y);
                     requests.Add(temp);
                 }
                 // Crowdshippers 
                 List<AlgorithmTesting.Trip> crowdshippers = new List<AlgorithmTesting.Trip>();
                 for (int k = 0; k < AlgorithmTesting.Program.crowdshipper_nodes.Count; k++)
                 {
-                    var temp = new AlgorithmTesting.Trip(AlgorithmTesting.Program.crowdshipper_nodes[k].x_src,
+                    AlgorithmTesting.Trip temp = new AlgorithmTesting.Trip(AlgorithmTesting.Program.crowdshipper_nodes[k].x_src,
                         AlgorithmTesting.Program.crowdshipper_nodes[k].y_src, AlgorithmTesting.Program.crowdshipper_nodes[k].x_dest,
                         AlgorithmTesting.Program.crowdshipper_nodes[k].y_dest);
                     crowdshippers.Add(temp);
@@ -312,10 +359,10 @@ namespace Genetic
                 {
                     AlgorithmTesting.Node sup = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_sup_req[k].source.x, AlgorithmTesting.Program.tuples_sup_req[k].source.y);
                     AlgorithmTesting.Node req = new AlgorithmTesting.Node(AlgorithmTesting.Program.tuples_sup_req[k].destination.x, AlgorithmTesting.Program.tuples_sup_req[k].destination.y);
-                    var temp = new AlgorithmTesting.AssignedTriple(sup, req, null);
+                    AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(sup, req, null);
                     sup_req.Add(temp);
                 }
-
+                
                 // Sup_Crowd
                 List<AlgorithmTesting.AssignedTriple> sup_crowd = new List<AlgorithmTesting.AssignedTriple>();
                 for (int k = 0; k < AlgorithmTesting.Program.tuples_sup_crowd.Count; k++)
@@ -326,7 +373,7 @@ namespace Genetic
                                                                             AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.x_dest,
                                                                             AlgorithmTesting.Program.tuples_sup_crowd[k].crowdshipper.y_dest);
 
-                    var temp = new AlgorithmTesting.AssignedTriple(sup, null, crowd);
+                    AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(sup, null, crowd);
                     sup_crowd.Add(temp);
                 }
 
@@ -340,25 +387,39 @@ namespace Genetic
                                                                             AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.x_dest,
                                                                             AlgorithmTesting.Program.tuples_req_crowd[k].crowdshipper.y_dest);
 
-                    var temp = new AlgorithmTesting.AssignedTriple(null, req, crowd);
+                    AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(null, req, crowd);
                     req_crowd.Add(temp);
                 }
+
+                //Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}", supplies.Count, requests.Count ,crowdshippers.Count, sup_req.Count, sup_crowd.Count, req_crowd.Count);
 
                 List<AlgorithmTesting.AssignedTriple> feasibleSolution = new List<AlgorithmTesting.AssignedTriple>();
                 int len = supplies.Count; // let's assume all the lengths are the same (200)
                 int j = 0;                
                 while (true)
-                {
+                {                    
                     if (supplies.Count == 0 || requests.Count == 0 || crowdshippers.Count == 0)
                     {
                         // if all the items are assigned get out of the loop
                         break;
                     }
+                    if (sup_req.Count == 0 && sup_crowd.Count == 0 && req_crowd.Count == 0)
+                    {
+                        AlgorithmTesting.AssignedTriple selected = new AlgorithmTesting.AssignedTriple(supplies[0], requests[0], null);
+                        selected.type_of_delivery = 4;
+                        calculate_profit(selected);
+                        feasibleSolution.Add(selected);
+                        
+                        remove_from_list_of_nodes(supplies, selected.source);
+                        remove_from_list_of_nodes(requests, selected.destination);
+                        //Console.WriteLine("sup req {0}, {1}, {2}, {3}, {4}, {5}", supplies.Count, requests.Count, crowdshippers.Count, sup_req.Count, sup_crowd.Count, req_crowd.Count);
+
+                    }
                     // Randomly get a number between 0, 1, 2
                     // Self_Sourcing, Home_Delivery, Neighborhood_Delivery
                     int randomNum = random.Next(3);
                     //Console.WriteLine(randomNum);
-                    if (randomNum == 0)
+                    if (randomNum == 0 && sup_req.Count > 0)
                     {
                         int counter = 0;
                         int rand = random.Next(sup_req.Count);                     
@@ -376,11 +437,18 @@ namespace Genetic
                         }
                         calculate_profit(selected);
                         feasibleSolution.Add(selected);                        
-                        sup_req.Remove(selected);
+                        sup_req.Remove(selected);                        
                         remove_from_list_of_nodes(supplies, selected.source);                        
-                        remove_from_list_of_nodes(requests, selected.destination);                        
+                        remove_from_list_of_nodes(requests, selected.destination);
+                        AlgorithmTesting.Node src = new AlgorithmTesting.Node(selected.source.x, selected.source.y);
+                        AlgorithmTesting.Node dst = new AlgorithmTesting.Node(selected.destination.x, selected.destination.y);                        
+                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(src, dst, null);
+                        remove_from_list_of_triples(sup_crowd, temp, 3);                                    
+                        remove_from_list_of_triples(req_crowd, temp, 2);
+
+                        //Console.WriteLine("sup req {0}, {1}, {2}, {3}, {4}, {5}", supplies.Count, requests.Count, crowdshippers.Count, sup_req.Count, sup_crowd.Count, req_crowd.Count);
                     }
-                    if (randomNum == 1)
+                    if (randomNum == 1 && req_crowd.Count > 0)
                     {
                         // don't forget to add the selected whatever to the assignment 
                         // before checking feasibility
@@ -406,16 +474,25 @@ namespace Genetic
                         }
                         calculate_profit(selected_req_crowd);
                         feasibleSolution.Add(selected_req_crowd);
-                        req_crowd.Remove(selected_req_crowd);                                            
+                        //req_crowd.Remove(selected_req_crowd);                                            
                         remove_from_list_of_nodes(supplies, selected_req_crowd.source);
                         remove_from_list_of_nodes(requests, selected_req_crowd.destination);
                         remove_from_list_of_trips(crowdshippers, selected_req_crowd.crowdshipper);
                         // also remove from sup_crowd    
-                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(selected_req_crowd.source, selected_req_crowd.destination, selected_req_crowd.crowdshipper);
+                        AlgorithmTesting.Node src = new AlgorithmTesting.Node(selected_req_crowd.source.x, selected_req_crowd.source.y);
+                        AlgorithmTesting.Node dst = new AlgorithmTesting.Node(selected_req_crowd.destination.x, selected_req_crowd.destination.y);
+                        AlgorithmTesting.Trip trip = new AlgorithmTesting.Trip(selected_req_crowd.crowdshipper.x_src, selected_req_crowd.crowdshipper.y_src, selected_req_crowd.crowdshipper.x_dest, selected_req_crowd.crowdshipper.y_dest);
+                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(src, dst, trip);
                         remove_from_list_of_triples(sup_crowd, temp, 1);
+                        remove_from_list_of_triples(sup_crowd, temp, 3);
+                        remove_from_list_of_triples(req_crowd, temp, 1);
+                        remove_from_list_of_triples(req_crowd, temp, 2);
+                        remove_from_list_of_triples(sup_req, temp, 3);
+                        remove_from_list_of_triples(sup_req, temp, 2);
+                        //Console.WriteLine("req crowd {0}, {1}, {2}, {3}, {4}, {5}", supplies.Count, requests.Count, crowdshippers.Count, sup_req.Count, sup_crowd.Count, req_crowd.Count);
                     }
 
-                    if (randomNum == 2)
+                    if (randomNum == 2 && sup_crowd.Count > 0)
                     {
                         // don't forget to add the selected whatever to the assignment 
                         // before checking feasibility
@@ -441,22 +518,32 @@ namespace Genetic
                         }
                         calculate_profit(selected_sup_crowd);
                         feasibleSolution.Add(selected_sup_crowd);
-                        sup_crowd.Remove(selected_sup_crowd);
-                        remove_from_list_of_nodes(supplies, selected_sup_crowd.source);
+                        sup_crowd.Remove(selected_sup_crowd);                       
+                        remove_from_list_of_nodes(supplies, selected_sup_crowd.source);                        
                         remove_from_list_of_nodes(requests, selected_sup_crowd.destination);
                         remove_from_list_of_trips(crowdshippers, selected_sup_crowd.crowdshipper);
                         // also remove from req_crowd    
-                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(selected_sup_crowd.source, selected_sup_crowd.destination, selected_sup_crowd.crowdshipper);
+                        AlgorithmTesting.Node src = new AlgorithmTesting.Node(selected_sup_crowd.source.x, selected_sup_crowd.source.y);
+                        AlgorithmTesting.Node dst = new AlgorithmTesting.Node(selected_sup_crowd.destination.x, selected_sup_crowd.destination.y);
+                        AlgorithmTesting.Trip trip = new AlgorithmTesting.Trip(selected_sup_crowd.crowdshipper.x_src, selected_sup_crowd.crowdshipper.y_src, selected_sup_crowd.crowdshipper.x_dest, selected_sup_crowd.crowdshipper.y_dest);
+                        AlgorithmTesting.AssignedTriple temp = new AlgorithmTesting.AssignedTriple(src, dst, trip);
+                        
+                        remove_from_list_of_triples(req_crowd, temp, 1);
                         remove_from_list_of_triples(req_crowd, temp, 2);
+                        remove_from_list_of_triples(sup_crowd, temp, 1);
+                        remove_from_list_of_triples(sup_crowd, temp, 3);
+                        remove_from_list_of_triples(sup_req, temp, 3);
+                        remove_from_list_of_triples(sup_req, temp, 2);
+                        //Console.WriteLine("sup crowd {0}, {1}, {2}, {3}, {4}, {5}", supplies.Count, requests.Count, crowdshippers.Count, sup_req.Count, sup_crowd.Count, req_crowd.Count);
                     }
 
                     j++;             
 
                 }
-
                 // Add the i-th list to the population list
+                //Console.WriteLine(feasibleSolution.Count);
                 initial_population.Add(feasibleSolution);
-                //print_list(feasibleSolution, 10);
+                //print_list(feasibleSolution, 200);
                 // print_list_list(initial_population, 5);
             }
             //print_list_list(initial_population, 5);
@@ -511,11 +598,11 @@ namespace Genetic
                 }
             }
 
-            //Console.WriteLine("\n------------\n New Gen \n");            
-            //for (int x=0; x<n; x++)
-            //{
-            //    Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
-            //}
+            Console.WriteLine("\n------------\n New Gen \n");
+            for (int x = 0; x < n; x++)
+            {
+                Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
+            }
 
             // Create Next Generation
             List<List<AlgorithmTesting.AssignedTriple>> next_gen = new List<List<AlgorithmTesting.AssignedTriple>>();
@@ -594,12 +681,13 @@ namespace Genetic
         }
 
 
-        public void Run()
+        public void Run(int index)
         {            
             int population_size = 100;
             int number_of_iterations = 400;            
 
             Generate_Initial_Population(population_size);
+            //Console.WriteLine(initial_population[0].Count);
             // create as many possible assignments as the size given
 
             for(int i=0; i<number_of_iterations; i++)
@@ -615,6 +703,7 @@ namespace Genetic
                 // crossover and mutation baby B)
             }
             Console.WriteLine("Total profit: {0}\n", fitness_values[0]);
+            write_results_in_file(index);
         }
 
 
