@@ -28,6 +28,11 @@ namespace Genetic
             // Write all the matches
             string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result";
             //Console.WriteLine(initial_population[0].Count);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            File.WriteAllText(dir + "\\assignments.txt", "");
             for (int i=0; i<initial_population[0].Count; i++)
             {
                 string assignment = "";
@@ -47,17 +52,12 @@ namespace Genetic
                 }
                 else
                 {
-                    assignment += assignment += "Crowdshipper: (" + initial_population[0][i].crowdshipper.x_src.ToString() + ", " + initial_population[0][i].crowdshipper.y_src.ToString() + ")"
+                    assignment += "Crowdshipper: (" + initial_population[0][i].crowdshipper.x_src.ToString() + ", " + initial_population[0][i].crowdshipper.y_src.ToString() + ")"
                         + " -> (" + initial_population[0][i].crowdshipper.x_dest.ToString() + ", " + initial_population[0][i].crowdshipper.y_dest.ToString() + ")\n";                        
-                }                
-
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                File.WriteAllText(dir + "\\assignments.txt", assignment);
+                }              
+                File.AppendAllText(dir + "\\assignments.txt", assignment);
             }
-            
+
             
         }
 
@@ -195,7 +195,7 @@ namespace Genetic
             if (t.type_of_delivery == 1)
             {
                 // self source
-                t.profit = 10;
+                profit = 10;
             }
             
             if (t.type_of_delivery == 2)
@@ -271,7 +271,7 @@ namespace Genetic
             // assigned is the object we wanna check feasiblity
             // n is the type of assignment
             double speed = 30.0; // km per hour
-            if (n == 0)
+            if (n == 0 || n == 3)
             {
                 // check ssrc condition i.e.  t < 10 min
                 double distance = GetDistance(assigned.source.y, assigned.source.x, assigned.destination.y, assigned.destination.x);
@@ -598,11 +598,11 @@ namespace Genetic
                 }
             }
 
-            Console.WriteLine("\n------------\n New Gen \n");
-            for (int x = 0; x < n; x++)
-            {
-                Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
-            }
+            //Console.WriteLine("\n------------\n New Gen \n");
+            //for (int x = 0; x < n; x++)
+            //{
+            //    Console.WriteLine("index: {0}, fitness: {1}", index_keeper[x], fitness_values[x]);
+            //}
 
             // Create Next Generation
             List<List<AlgorithmTesting.AssignedTriple>> next_gen = new List<List<AlgorithmTesting.AssignedTriple>>();
@@ -617,58 +617,231 @@ namespace Genetic
                 members.Add(member_copy);
 
                 // Create two new children
-                for (int j=0; j< members.Count; j++) {                
-                    int rand1 = random.Next(members[j].Count);
-                    int rand2 = random.Next(members[j].Count);
-                    while (rand1 == rand2)
-                    {
-                        rand2 = random.Next(members[j].Count);
-                    }
+                for (int j=0; j< members.Count; j++) {
 
-                    var assignment1 = members[j][rand1];
-                    var assignment2 = members[j][rand2];
+                    for (int k = 0; k < 10; k++)
+                    {
+                        int rand1 = random.Next(members[j].Count);
+                        int rand2 = random.Next(members[j].Count);
 
-                    if (assignment1.type_of_delivery == 1 && assignment2.type_of_delivery != 1)
-                    {
-                        //Console.WriteLine("ssrc & home");
-                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
-                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, null);
-                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
-                        {
-                            members[j][rand1] = child1;                            
-                        }
-                        if (check_feasibility(child2, 0))
-                        {
-                            members[j][rand2] = child2;                           
-                        }
-                    }
-                    if (assignment2.type_of_delivery == 1 && assignment1.type_of_delivery != 1)
-                    {
-                        //Console.WriteLine("ssrc & home");
-                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, null);
-                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
-                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
-                        {
-                            members[j][rand1] = child1;
-                        }
-                        if (check_feasibility(child2, 0))
-                        {
-                            members[j][rand2] = child2;
-                        }
-                    }
+                        int rand3 = random.Next(4);
+                        // 0: change the src
+                        // 1: change the dest
+                        // 2: change the crowdshipper
+                        // 3: change type of delivery
 
-                    if (assignment1.type_of_delivery !=1 && assignment2.type_of_delivery != 1)
-                    {
-                        AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
-                        AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
-                        if (check_feasibility(child1, assignment2.type_of_delivery - 1))
+                        while (rand1 == rand2)
                         {
-                            members[j][rand1] = child1;
+                            rand2 = random.Next(members[j].Count);
                         }
-                        if (check_feasibility(child2, assignment2.type_of_delivery - 1))
+
+                        var assignment1 = members[j][rand1];
+                        var assignment2 = members[j][rand2];
+
+                        if (rand3 == 0)
+                        { // swap suppliers
+                            AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment1.destination, assignment1.crowdshipper);
+                            AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment2.destination, assignment2.crowdshipper);
+                            if (check_feasibility(child1, assignment1.type_of_delivery - 1) && check_feasibility(child2, assignment2.type_of_delivery - 1))
+                            {
+                                calculate_profit(child1);
+                                calculate_profit(child2);
+                                members[j][rand1] = child1;                                
+                                members[j][rand2] = child2;                                
+                            }
+                        }
+
+                        else if (rand3 == 1)
                         {
-                            members[j][rand2] = child2;
+                            // swap requests
+                            AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment2.destination, assignment1.crowdshipper);
+                            AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment1.destination, assignment2.crowdshipper);
+                            if (check_feasibility(child1, assignment1.type_of_delivery - 1) && check_feasibility(child2, assignment2.type_of_delivery - 1))
+                            {
+                                calculate_profit(child1);
+                                calculate_profit(child2);
+                                members[j][rand1] = child1;
+                                members[j][rand2] = child2;
+                            }
                         }
+                        else if (rand3 == 2)
+                        {
+                            // swap crowdshippers
+                            AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                            AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                            if (check_feasibility(child1, assignment2.type_of_delivery - 1) && check_feasibility(child2, assignment1.type_of_delivery - 1))
+                            {
+                                calculate_profit(child1);
+                                calculate_profit(child2);
+                                members[j][rand1] = child1;
+                                members[j][rand2] = child2;
+                            }
+
+                        }
+                        else if (rand3 == 3)
+                        {
+                            // change types
+                            // a little different from the previous ones
+                            AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment1.crowdshipper);
+                            int flag = assignment1.type_of_delivery;
+                            calculate_profit(assignment1);
+                            double profit = assignment1.profit;       
+                            if (assignment1.type_of_delivery == 4 && check_feasibility(child1, 0))
+                            {
+                                calculate_profit(child1);                                
+                                members[j][rand1] = child1;
+                            }  
+                            else if (assignment1.type_of_delivery == 2 || assignment1.type_of_delivery == 3)
+                            {
+                                for(int p=0; p<3; p++)
+                                {
+                                    if(check_feasibility(child1, p))
+                                    {
+                                        calculate_profit(child1);
+                                        double profit_new = child1.profit;
+                                        if (profit_new > profit)
+                                        {
+                                            profit = profit_new;
+                                            flag = p;
+                                        }
+                                    }
+                                }
+                                check_feasibility(child1, flag);
+                                calculate_profit(child1);                                
+                                members[j][rand1] = child1;
+                            }
+
+                            AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment2.crowdshipper);
+                            int flag2 = assignment2.type_of_delivery;
+                            calculate_profit(assignment2);
+                            double profit2 = assignment2.profit;
+                            if (assignment2.type_of_delivery == 4 && check_feasibility(child2, 0))
+                            {                                
+                                calculate_profit(child2);
+                                members[j][rand2] = child2;
+                            }
+                            else if (assignment2.type_of_delivery == 2 || assignment2.type_of_delivery == 3)
+                            {
+                                for (int p = 0; p < 3; p++)
+                                {
+                                    if (check_feasibility(child2, p))
+                                    {
+                                        calculate_profit(child2);
+                                        double profit_new = child2.profit;
+                                        if (profit_new > profit2)
+                                        {
+                                            profit2 = profit_new;
+                                            flag2 = p;
+                                        }
+                                    }
+                                }
+                                check_feasibility(child2, flag2);                                
+                                calculate_profit(child2);
+                                members[j][rand2] = child2;
+                            }
+                        }
+
+
+                        //if (assignment1.type_of_delivery == 1 && (assignment2.type_of_delivery == 2 || assignment2.type_of_delivery == 3))
+                        //{
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, null);
+                        //    if (check_feasibility(child1, 1) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //    if (check_feasibility(child1, 2) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
+                        //if (assignment2.type_of_delivery == 1 && (assignment1.type_of_delivery == 2 || assignment1.type_of_delivery == 3))
+                        //{
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, null);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                        //    if (check_feasibility(child2, 1) && check_feasibility(child1, 0))
+                        //    {                             
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //    if (check_feasibility(child2, 2) && check_feasibility(child1, 0))
+                        //    {                             
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
+
+                        //if ((assignment1.type_of_delivery == 2 || assignment1.type_of_delivery == 3) && (assignment2.type_of_delivery == 2 || assignment2.type_of_delivery == 3))
+                        //{
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                        //    if (check_feasibility(child1, 1) && check_feasibility(child2, 2))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //    if (check_feasibility(child1, 2) && check_feasibility(child2, 1))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
+                        //if (assignment1.type_of_delivery == 1 && assignment2.type_of_delivery == 4)
+                        //{
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment2.destination, null);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment1.destination, null);
+                        //    if (check_feasibility(child1, 0) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
+
+                        //if (assignment2.type_of_delivery == 1 && assignment1.type_of_delivery == 4)
+                        //{
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment2.destination, null);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment1.destination, null);
+                        //    if (check_feasibility(child1, 0) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
+                        //if (assignment1.type_of_delivery == 4 && (assignment2.type_of_delivery == 2 || assignment2.type_of_delivery == 3))
+                        //{
+                        //    //Console.WriteLine("ssrc & home");
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, assignment2.crowdshipper);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, null);
+                        //    if (check_feasibility(child1, 1) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //    if (check_feasibility(child1, 2) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+
+                        //}
+                        //if (assignment2.type_of_delivery == 4 && (assignment1.type_of_delivery == 2 || assignment1.type_of_delivery == 3))
+                        //{
+                        //    //Console.WriteLine("ssrc & home");
+                        //    AlgorithmTesting.AssignedTriple child1 = new AlgorithmTesting.AssignedTriple(assignment1.source, assignment1.destination, null);
+                        //    AlgorithmTesting.AssignedTriple child2 = new AlgorithmTesting.AssignedTriple(assignment2.source, assignment2.destination, assignment1.crowdshipper);
+                        //    if (check_feasibility(child2, 1) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //    if (check_feasibility(child2, 2) && check_feasibility(child2, 0))
+                        //    {                                
+                        //        members[j][rand1] = child1;
+                        //        members[j][rand2] = child2;
+                        //    }
+                        //}
                     }
                     next_gen.Add(members[j]);
                 }                                        
@@ -683,7 +856,7 @@ namespace Genetic
 
         public void Run(int index)
         {            
-            int population_size = 100;
+            int population_size = 200;
             int number_of_iterations = 400;            
 
             Generate_Initial_Population(population_size);
