@@ -23,16 +23,17 @@ namespace Genetic
         //private List<AlgorithmTesting.Trip> trips = new List<AlgorithmTesting.Trip>();
         private List<List<AlgorithmTesting.AssignedTriple>> initial_population = new List<List<AlgorithmTesting.AssignedTriple>>();
        
-        public void write_results_in_file(int index)
+        public void write_results_in_file(int index, int j)
         {
             // Write all the matches
-            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result";
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result" + j.ToString();
             //Console.WriteLine(initial_population[0].Count);
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
             File.WriteAllText(dir + "\\assignments.txt", "");
+
             for (int i=0; i<initial_population[0].Count; i++)
             {
                 string assignment = "";
@@ -57,8 +58,54 @@ namespace Genetic
                 }              
                 File.AppendAllText(dir + "\\assignments.txt", assignment);
             }
-
             
+        }
+
+        public void Write_profit_iteration_file(int index, int i, int j)
+        {
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result" + j.ToString();
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }            
+            string text = "i" + i.ToString() + " p" + fitness_values[0].ToString() + "\n";
+            File.AppendAllText(dir + "\\profit-iteration.txt", text);
+
+
+        }
+
+        public void Write_ssrc_profit(int index, int j)
+        {
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result" + j.ToString();
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            string text = "";
+            File.AppendAllText(dir + "\\ssrc-profit.txt", text);
+        }
+
+        public void Write_type_iteration(int index, int i, int j)
+        {
+            string dir = @"D:\Project_Data\Generated_Coordinates\Sample" + index.ToString() + "\\Result" + j.ToString();
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            double s = 0;
+            double h = 0;
+            double n = 0;
+            double u = 0;
+         
+            for(int k=0; k<initial_population[0].Count; k++)
+            {
+                if (initial_population[0][k].type_of_delivery == 1) s++;
+                if (initial_population[0][k].type_of_delivery == 2) h++;
+                if (initial_population[0][k].type_of_delivery == 3) n++;
+                if (initial_population[0][k].type_of_delivery == 4) u++;
+            }
+            string text = "i" + i.ToString() + " s" + s.ToString() + " h" + h.ToString() + " n" + n.ToString() + " u" + u.ToString() + "\n";
+            File.AppendAllText(dir + "\\type-iteration.txt", text);
         }
 
         public void print_list(List<AlgorithmTesting.AssignedTriple> list, int n)
@@ -186,7 +233,7 @@ namespace Genetic
             var d3 = Math.Pow(Math.Sin((d2 - d1) / 2.0), 2.0) + Math.Cos(d1) * Math.Cos(d2) * Math.Pow(Math.Sin(num2 / 2.0), 2.0);
 
             var res = 6376500.0 * (2.0 * Math.Atan2(Math.Sqrt(d3), Math.Sqrt(1.0 - d3)));
-            return (res * 3) / 1000;
+            return (res * 2.75) / 1000;
         }
         static void calculate_profit(AlgorithmTesting.AssignedTriple t)
         {
@@ -752,7 +799,8 @@ namespace Genetic
         }
 
 
-        public void Run(int index)
+
+        public void Run(int index, int size)
         {            
             int population_size = 300;
             int number_of_iterations = 500;            
@@ -767,6 +815,9 @@ namespace Genetic
                 // inside the initial pop and assigned object
                 // calculate the value of fitness
 
+                Write_profit_iteration_file(index, i, size);
+                Write_type_iteration(index, i, size);
+
                 Select_Parents();
                 // select as many chromosome as the size of initial pop
 
@@ -774,7 +825,7 @@ namespace Genetic
                 // crossover and mutation baby B)
             }
             Console.WriteLine("Total profit: {0}\n", fitness_values[0]);
-            write_results_in_file(index);
+            write_results_in_file(index, size);
         }
 
 
